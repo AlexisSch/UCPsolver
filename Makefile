@@ -54,7 +54,9 @@ MAINOBJ		=	main.o \
 				ProductionPlan.o \
 				VariableMaster.o \
 				FormulationMaster.o \
-				ObjPricerUCP.o
+				ObjPricerUCP.o \
+				FormulationCompact.o \
+				FormulationLinearRelaxation.o
 									
 MAINSRC		=	$(addprefix $(SRCDIR)/,$(MAINOBJ:.o=.cpp))
 

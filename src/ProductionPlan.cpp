@@ -71,6 +71,22 @@ ProductionPlan::ProductionPlan( InstanceUCP* instance_ucp, FormulationPricer* fo
 }
 
 
+ProductionPlan::ProductionPlan( InstanceUCP* instance_ucp, FormulationCompact* formulation_compact )
+{
+    p_instance = instance_ucp;
+    transform_solution_in_plan( formulation_compact );
+    computeCost();
+}
+
+
+ProductionPlan::ProductionPlan( InstanceUCP* instance_ucp, FormulationLinearRelaxation* formulation_linear )
+{
+    p_instance = instance_ucp;
+    transform_solution_in_plan( formulation_linear );
+    computeCost();
+}
+
+
 ProductionPlan::~ProductionPlan()
 {
 
@@ -158,7 +174,7 @@ void ProductionPlan::transform_solution_in_plan( FormulationPricer* formulation_
 {
 
     SCIP* scip_pricer = formulation_pricer->get_scip_pointer();
-    SCIP_SOL *solution = SCIPgetBestSol( formulation_pricer->get_scip_pointer() );
+    SCIP_SOL *solution = SCIPgetBestSol( scip_pricer );
 
     vector< vector < SCIP_VAR* > > variable_x = formulation_pricer->get_variable_x();
     vector< vector< SCIP_VAR* > > variable_u = formulation_pricer->get_variable_u();
@@ -188,5 +204,106 @@ void ProductionPlan::transform_solution_in_plan( FormulationPricer* formulation_
 }
 
 
+void ProductionPlan::transform_solution_in_plan( FormulationCompact* formulation_compact )
+{
 
+    SCIP* scip_pricer = formulation_compact->get_scip_pointer();
+    SCIP_SOL *solution = SCIPgetBestSol( formulation_compact->get_scip_pointer() );
+
+    vector< vector < SCIP_VAR* > > variable_x = formulation_compact->get_variable_x();
+    vector< vector< SCIP_VAR* > > variable_u = formulation_compact->get_variable_u();
+    vector< vector< SCIP_VAR* > > variable_p = formulation_compact->get_variable_p();
+
+    int number_unit( variable_x.size() );
+    int number_time_steps( variable_x[0].size() );
+
+    m_up_down_plan.resize(number_unit);
+    m_switch_plan.resize(number_unit);
+    m_quantity_plan.resize(number_unit);
+
+    for( int i_unit = 0; i_unit < number_unit; i_unit ++)
+    {
+        m_up_down_plan[i_unit].resize(number_time_steps);
+        m_switch_plan[i_unit].resize(number_time_steps);
+        m_quantity_plan[i_unit].resize(number_time_steps);
+
+        for( int i_time_step = 0; i_time_step < number_time_steps; i_time_step++)
+        {
+            m_up_down_plan[i_unit][i_time_step] = SCIPgetSolVal( scip_pricer, solution, variable_x[i_unit][i_time_step]);
+            m_switch_plan[i_unit][i_time_step] = SCIPgetSolVal( scip_pricer, solution, variable_u[i_unit][i_time_step]);
+            m_quantity_plan[i_unit][i_time_step] = SCIPgetSolVal( scip_pricer, solution, variable_p[i_unit][i_time_step]);
+        }   
+    } 
+
+}
+
+
+void ProductionPlan::transform_solution_in_plan( FormulationLinearRelaxation* formulation_linear )
+{
+
+    SCIP* scip_pricer = formulation_linear->get_scip_pointer();
+    SCIP_SOL *solution = SCIPgetBestSol( formulation_linear->get_scip_pointer() );
+
+    vector< vector < SCIP_VAR* > > variable_x = formulation_linear->get_variable_x();
+    vector< vector< SCIP_VAR* > > variable_u = formulation_linear->get_variable_u();
+    vector< vector< SCIP_VAR* > > variable_p = formulation_linear->get_variable_p();
+
+    int number_unit( variable_x.size() );
+    int number_time_steps( variable_x[0].size() );
+
+    m_up_down_plan.resize(number_unit);
+    m_switch_plan.resize(number_unit);
+    m_quantity_plan.resize(number_unit);
+
+    for( int i_unit = 0; i_unit < number_unit; i_unit ++)
+    {
+        m_up_down_plan[i_unit].resize(number_time_steps);
+        m_switch_plan[i_unit].resize(number_time_steps);
+        m_quantity_plan[i_unit].resize(number_time_steps);
+
+        for( int i_time_step = 0; i_time_step < number_time_steps; i_time_step++)
+        {
+            m_up_down_plan[i_unit][i_time_step] = SCIPgetSolVal( scip_pricer, solution, variable_x[i_unit][i_time_step]);
+            m_switch_plan[i_unit][i_time_step] = SCIPgetSolVal( scip_pricer, solution, variable_u[i_unit][i_time_step]);
+            m_quantity_plan[i_unit][i_time_step] = SCIPgetSolVal( scip_pricer, solution, variable_p[i_unit][i_time_step]);
+        }   
+    } 
+
+}
+
+
+
+void ProductionPlan::empty_plan()
+{
+    int number_units( m_up_down_plan.size());
+    int number_time_steps( m_up_down_plan[0].size());
+
+    for( int i_units(0); i_units < number_units; i_units ++ )
+    {
+        for( int i_time_step(0); i_time_step < number_time_steps; i_time_step ++ )
+        {
+            m_up_down_plan[i_units][i_time_step] = 0;
+            m_switch_plan[i_units][i_time_step] = 0;
+            m_quantity_plan[i_units][i_time_step] = 0;
+        }
+    }
+}
+
+
+
+void ProductionPlan::add_column_values( ProductionPlan* production_plan_to_add, SCIP_Real coefficient_column )
+{
+    int number_units( p_instance->get_units_number());
+    int number_time_steps( p_instance->get_time_steps_number());
+
+    for( int i_unit = 0; i_unit < number_units; i_unit ++)
+    {
+        for( int i_time_step = 0; i_time_step < number_time_steps; i_time_step++ )
+        {
+            m_up_down_plan[i_unit][i_time_step] += production_plan_to_add->m_up_down_plan[i_unit][i_time_step]*coefficient_column;
+            m_switch_plan[i_unit][i_time_step] += production_plan_to_add->m_switch_plan[i_unit][i_time_step]*coefficient_column;
+            m_quantity_plan[i_unit][i_time_step] += production_plan_to_add->m_quantity_plan[i_unit][i_time_step]*coefficient_column; 
+        }
+    }
+}
 

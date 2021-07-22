@@ -11,7 +11,10 @@
 /* user includes */
 #include "ObjPricerUCP.h"
 #include "FormulationMaster.h"
+#include "FormulationPricer.h"
 #include "InstanceUCP.h"
+
+
 
 
 /* namespace */
@@ -47,11 +50,26 @@ ObjPricerUCP::~ObjPricerUCP()
  */
 SCIP_DECL_PRICERINIT(ObjPricerUCP::scip_init)
 {
+    
     int number_time_steps( p_instance_ucp->get_time_steps_number());
     for(int i_time_step = 0; i_time_step < number_time_steps; i_time_step ++ ) 
     {
-        SCIP_CONS* current_constraint( p_formulation_master->m_complicating_constraints[i_time_step]);
-        SCIPgetTransformedCons(scip_, current_constraint, &current_constraint);
+        SCIP_CALL( SCIPgetTransformedCons(scip, 
+                p_formulation_master->m_complicating_constraints[i_time_step],
+                &(p_formulation_master->m_complicating_constraints)[i_time_step]) );
+    }
+
+    SCIP_CALL( SCIPgetTransformedCons(scip, 
+            p_formulation_master->m_convexity_constraint, 
+            &p_formulation_master->m_convexity_constraint) );
+
+    int number_columns( p_formulation_master->m_vector_columns.size());
+    for( int i_column = 0; i_column < number_columns; i_column ++)
+    {
+        SCIP_VAR* current_var( p_formulation_master->m_vector_columns[i_column]->get_variable_pointer() );
+        SCIP_CALL( SCIPgetTransformedVar(scip, 
+            current_var, 
+            &current_var) );
     }
 
     return SCIP_OKAY;
@@ -77,23 +95,71 @@ SCIP_DECL_PRICERREDCOST(ObjPricerUCP::scip_redcost)
     *result = SCIP_SUCCESS;
 
     /* call pricing routine */
-    ucp_pricing();
+    ucp_pricing(scip);
 
     return SCIP_OKAY;
 } 
 
 
 
-void ObjPricerUCP::ucp_pricing()
+void ObjPricerUCP::ucp_pricing(SCIP* scip)
 {
-    cerr << "Let's take a look at the reduced costs : " << endl;
+    m_list_RMP_opt.push_back( SCIPgetPrimalbound( scip ) );
+
+    // get the reduced costs
     int number_time_steps( p_instance_ucp->get_time_steps_number());
-    int value_dual_cost(0);
+    vector< SCIP_Real > reduced_cost_demand;
+    reduced_cost_demand.resize( number_time_steps );
+    SCIP_CONS* current_constraint(0);
+
     for(int i_time_step = 0; i_time_step < number_time_steps; i_time_step ++ ) 
     {
-        SCIP_CONS* current_constraint( p_formulation_master->m_complicating_constraints[i_time_step]);
-        value_dual_cost = SCIPgetDualsolLinear( scip_, current_constraint );
-        cerr << "the value of the constraint " << i_time_step << " is : " << value_dual_cost << endl;
+        current_constraint =  p_formulation_master->m_complicating_constraints[i_time_step] ;
+        reduced_cost_demand[i_time_step] = SCIPgetDualsolLinear( scip, current_constraint );
+        // cerr << "the value of the demand constraint " << i_time_step << " is : " << reduced_cost_demand[i_time_step] << endl;
     }
-    cerr << "see you, pricer" << endl;
+    current_constraint = p_formulation_master->m_convexity_constraint;
+    SCIP_Real reduced_cost_convexity( SCIPgetDualsolLinear( scip, current_constraint ) );
+    // cerr << "the value of convexity demand is : " << reduced_cost_convexity << endl;
+
+
+    //  create and solve the pricing problem with the reduced values
+    SCIP* scip_pricer(0);
+    SCIPcreate( &scip_pricer );
+    SCIPincludeDefaultPlugins( scip_pricer );
+    SCIPcreateProb(scip_pricer, "UCP_PRICER_PROBLEM", 0, 0, 0, 0, 0, 0, 0);
+    SCIPsetIntParam(scip_pricer, "display/verblevel", 0);
+    FormulationPricer *formulation_pricer = new FormulationPricer( p_instance_ucp, scip_pricer, reduced_cost_demand );
+    SCIPsolve( scip_pricer );
+    // SCIPprintBestSol(scip_pricer, NULL, FALSE) ;
+
+    // if a plan is found, create and add the column, else, do nothing, which will make the column generation stop
+    SCIP_Real optimal_value(SCIPgetPrimalbound( scip_pricer ) );
+    if( optimal_value < reduced_cost_convexity -0.0001 )
+    {
+
+        // create the plan
+        ProductionPlan* new_plan = new ProductionPlan( p_instance_ucp, formulation_pricer );
+        new_plan->computeCost();
+
+        // create the scip variable
+        string column_name = "column_" + to_string(p_formulation_master->m_vector_columns.size()); 
+        SCIP_VAR* p_variable;
+
+        SCIPcreateVar(  scip,
+            &p_variable,                            // pointer 
+            column_name.c_str(),                            // name
+            0.,                                     // lowerbound
+            +SCIPinfinity(scip),            // upperbound
+            new_plan->get_cost(),          // coeff in obj function
+            SCIP_VARTYPE_CONTINUOUS,
+            false, false, NULL, NULL, NULL, NULL, NULL);
+    
+        SCIPaddPricedVar(scip, p_variable, 1.);
+
+        // create the master variable
+        VariableMaster* new_column = new VariableMaster( p_variable, new_plan );
+        p_formulation_master->addColumn( new_column );
+    }
+    
 }

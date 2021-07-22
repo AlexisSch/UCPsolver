@@ -16,7 +16,8 @@
 /* user includes */
 #include "InstanceUCP.h"
 #include "FormulationPricer.h"
-
+#include "FormulationCompact.h"
+#include "FormulationLinearRelaxation.h"
 
 
 class ProductionPlan
@@ -27,16 +28,29 @@ class ProductionPlan
     ProductionPlan(InstanceUCP* instance_ucp);
 
     ProductionPlan(InstanceUCP* instance_ucp, FormulationPricer* formulation_pricer );
+    ProductionPlan(InstanceUCP* instance_ucp, FormulationLinearRelaxation* formulation_linear );
+    ProductionPlan(InstanceUCP* instance_ucp, FormulationCompact* formulation_compact );
+
 
     ~ProductionPlan();
     void show();
     void computeCost();
 
+    void empty_plan();
+
     double get_cost();
     std::vector< std::vector< double > > get_quantity_plan(); 
 
     void transform_solution_in_plan( FormulationPricer* formulation_pricer );
+    void transform_solution_in_plan( FormulationCompact* formulation_compact );
+    void transform_solution_in_plan( FormulationLinearRelaxation* formulation_linear );
 
+    /* allows to create a plan for the master problem solution.
+    Was hard to code, probably better things / smarter to be done */
+    void add_column_values( ProductionPlan* production_plan_to_add, SCIP_Real coefficient_column );
+
+
+    
     private:
     
     InstanceUCP* p_instance;

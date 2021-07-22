@@ -35,15 +35,19 @@ FormulationMaster::FormulationMaster( InstanceUCP* instance, SCIP* scip_master)
 
     current_cons_name.str("");
     current_cons_name << "convexity_constraint";
-    SCIPcreateConsBasicLinear(p_scip_master, 
-            &m_convexity_constraint,            /* constraint pointer */ 
-            current_cons_name.str().c_str(),    /* constraint name */
-            0,                                  /* number of variable added */
-            nullptr,                            /* array of variable */
-            nullptr,                            /* array of coefficient */
-            1 ,    /* LHS */
-            1 );                                 /* RHS */
-
+    SCIPcreateConsLinear( p_scip_master, &m_convexity_constraint, current_cons_name.str().c_str(), 0, NULL, NULL,
+			    1.0,   // lhs 
+			    1.0,   // rhs 
+			    true,  /* initial */
+			    false, /* separate */
+			    true,  /* enforce */
+			    true,  /* check */
+			    true,  /* propagate */
+			    false, /* local */
+			    true,  /* modifiable */
+			    false, /* dynamic */
+			    false, /* removable */
+			    false  /* stickingatnode */ );
     SCIPaddCons( p_scip_master, m_convexity_constraint );
 
 
@@ -58,15 +62,19 @@ FormulationMaster::FormulationMaster( InstanceUCP* instance, SCIP* scip_master)
 
         current_cons_name.str("");
         current_cons_name << "demand_constraint_" << i_time_step;
-        SCIPcreateConsBasicLinear(p_scip_master, 
-                &demand_constraint_t,               /* constraint   */ 
-                current_cons_name.str().c_str(),    /* constraint name */
-                0,                                  /* number of variable added */
-                nullptr,                            /* array of variable */
-                nullptr,                            /* array of coefficient */
-                demand[i_time_step] ,               /* LHS */
-                + SCIPinfinity( p_scip_master ) );  /* RHS */
-
+        SCIPcreateConsLinear( p_scip_master, &demand_constraint_t, current_cons_name.str().c_str(), 0, NULL, NULL,
+			    demand[i_time_step],   // lhs 
+			    + SCIPinfinity( p_scip_master ),   // rhs 
+			    true,  /* initial */
+			    false, /* separate */
+			    true,  /* enforce */
+			    true,  /* check */
+			    true,  /* propagate */
+			    false, /* local */
+			    true,  /* modifiable */
+			    false, /* dynamic */
+			    false, /* removable */
+			    false  /* stickingatnode */ );
         SCIPaddCons( p_scip_master, demand_constraint_t );
         m_complicating_constraints[i_time_step] = demand_constraint_t;
     }
@@ -80,41 +88,23 @@ FormulationMaster::~FormulationMaster()
 {}
 
 
-void FormulationMaster::addColumn( ProductionPlan* production_plan)
+void FormulationMaster::addColumn( VariableMaster* variable_to_add )
 {
-    // creating the column variable
-
-    string column_name = "column_" + to_string(m_vector_columns.size()); 
     
-    SCIP_VAR* p_variable;
-    // we create the variable
-    SCIPcreateVarBasic(  p_scip_master,
-        &p_variable,                            // pointer 
-        column_name.c_str(),                            // name
-        0.,                                     // lowerbound
-        +SCIPinfinity(p_scip_master),            // upperbound
-        production_plan->get_cost(),          // coeff in obj function
-        SCIP_VARTYPE_CONTINUOUS);                   // type
-    
-    SCIPaddVar(p_scip_master, p_variable);
+    SCIP_VAR* p_variable = variable_to_add->get_variable_pointer();
 
-
-    VariableMaster current_column( p_variable, production_plan );
-
-    m_vector_columns.push_back( &current_column );
-     
     // add column to convexity constraint
     SCIPaddCoefLinear(p_scip_master,
                 m_convexity_constraint,
                 p_variable,  /* variable to add */
-                1.);                               /* coefficient */        
+                1.);         /* coefficient */        
     
     // add column to demand constraints
     int number_time_step( p_instance->get_time_steps_number() );
-    vector<vector<double>> quantity_plan = production_plan->get_quantity_plan();
+    vector<vector<double>> quantity_plan = variable_to_add->get_production_plan()->get_quantity_plan();
     for( int i_time_step = 0; i_time_step < number_time_step; i_time_step++ )
     {
-        int quantity_plan_t(0);
+        double quantity_plan_t(0);
         for( int i_unit = 0; i_unit < p_instance->get_units_number(); i_unit++ )
         {
             quantity_plan_t += quantity_plan[i_unit][i_time_step];
@@ -124,7 +114,10 @@ void FormulationMaster::addColumn( ProductionPlan* production_plan)
             p_variable,  /* variable to add */
             quantity_plan_t);                                    /* coefficient */
     }
-    
+
+    m_vector_columns.push_back( variable_to_add );
+
+
     return;
 }
 
@@ -141,6 +134,37 @@ vector<int> FormulationMaster::get_dual_sol()
         dual_sol[i_time_step] = dual_sol_t;
     }
 }
+
+
+ProductionPlan* FormulationMaster::get_production_plan_from_solution()
+{
+
+    int number_columns( m_vector_columns.size());
+    
+    // create empty plan
+    ProductionPlan* production_plan = new ProductionPlan( p_instance );
+    production_plan->empty_plan();
+
+    // now add the columns values to the plan
+    SCIP_SOL *solution = SCIPgetBestSol( p_scip_master );
+
+    for(int i_column = 0; i_column < number_columns; i_column ++)
+    {
+        // get the plan
+        VariableMaster* current_variable = m_vector_columns[i_column];
+        ProductionPlan* current_plan = current_variable->get_production_plan();
+        
+        // add the value to the new plan
+        SCIP_Real coefficient_column( SCIPgetSolVal( p_scip_master, solution, current_variable->get_variable_pointer()));
+        production_plan->add_column_values( current_plan, coefficient_column);
+        production_plan->computeCost();
+    }
+
+    return( production_plan);
+}
+
+
+
 
 
 

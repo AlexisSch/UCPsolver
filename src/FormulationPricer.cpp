@@ -28,14 +28,16 @@ using namespace std;
  * takes a lot of spaces. An option would be to put it inside functions in a class constraints / variables ? 
 
 */
-FormulationPricer::FormulationPricer(InstanceUCP *instance, SCIP *scip) : p_scip(0), p_ucp_instance(0)
+FormulationPricer::FormulationPricer(InstanceUCP *instance, 
+    SCIP *scip, 
+    vector<SCIP_Real> reduced_costs_demand): p_scip(0), p_ucp_instance(0)
 {
 
     p_scip = scip;
     p_ucp_instance = instance;
 
     SCIP_RETCODE retcode(SCIP_OKAY);
-    retcode = create_variables();
+    retcode = create_variables(reduced_costs_demand);
     if ( retcode != SCIP_OKAY)
     {
         SCIPprintError( retcode );
@@ -49,7 +51,7 @@ FormulationPricer::FormulationPricer(InstanceUCP *instance, SCIP *scip) : p_scip
 }
 
 /* create all the variable and add them to the object */
-SCIP_RETCODE FormulationPricer::create_variables()
+SCIP_RETCODE FormulationPricer::create_variables(vector<SCIP_Real> reduced_costs_demand)
 {
     ostringstream current_var_name;
     int unit_number = p_ucp_instance->get_units_number();
@@ -134,7 +136,7 @@ SCIP_RETCODE FormulationPricer::create_variables()
                 current_var_name.str().c_str(), // name
                 0,                     // lowerbound
                 prod_max[i_unit],                              // upperbound
-                cost_prop[i_unit],                    // coeff in obj function
+                cost_prop[i_unit] - reduced_costs_demand[i_time_step],              // coeff in obj function
                 SCIP_VARTYPE_CONTINUOUS));      // type
 
             // Adding the variable to the problem and the var matrix
@@ -157,32 +159,32 @@ SCIP_RETCODE FormulationPricer::create_constraints()
     int time_step_number = p_ucp_instance->get_time_steps_number();
 
 
-    // //* demand constraint
-    for(int i_time_step = 0; i_time_step < time_step_number; i_time_step++)
-    {
-        SCIP_CONS* cons_demand_t;
-        current_cons_name.str("");
-        current_cons_name << "cons_demand_" << i_time_step;
-        // creating the constraint
-        SCIP_CALL(SCIPcreateConsBasicLinear(p_scip, 
-            &cons_demand_t,                     /* constraint pointer */ 
-            current_cons_name.str().c_str(),    /* constraint name */
-            0,                                  /* number of variable added */
-            nullptr,                            /* array of variable */
-            nullptr,                            /* array of coefficient */
-            p_ucp_instance->get_demand()[i_time_step],         /* LHS */
-            +SCIPinfinity(p_scip)));              /* RHS */        
-        // adding the variable
-        for(int i_unit = 0; i_unit < unit_number; i_unit++)
-        {
-            SCIP_CALL( SCIPaddCoefLinear(p_scip,
-                cons_demand_t,
-                m_variable_p[i_unit][i_time_step],  /* variable to add */
-                1.));                               /* coefficient */
-        }
-        SCIP_CALL( SCIPaddCons(p_scip, cons_demand_t));
-        m_constraint_demand.push_back(cons_demand_t);
-    }
+    // // //* demand constraint
+    // for(int i_time_step = 0; i_time_step < time_step_number; i_time_step++)
+    // {
+    //     SCIP_CONS* cons_demand_t;
+    //     current_cons_name.str("");
+    //     current_cons_name << "cons_demand_" << i_time_step;
+    //     // creating the constraint
+    //     SCIP_CALL(SCIPcreateConsBasicLinear(p_scip, 
+    //         &cons_demand_t,                     /* constraint pointer */ 
+    //         current_cons_name.str().c_str(),    /* constraint name */
+    //         0,                                  /* number of variable added */
+    //         nullptr,                            /* array of variable */
+    //         nullptr,                            /* array of coefficient */
+    //         p_ucp_instance->get_demand()[i_time_step],         /* LHS */
+    //         +SCIPinfinity(p_scip)));              /* RHS */        
+    //     // adding the variable
+    //     for(int i_unit = 0; i_unit < unit_number; i_unit++)
+    //     {
+    //         SCIP_CALL( SCIPaddCoefLinear(p_scip,
+    //             cons_demand_t,
+    //             m_variable_p[i_unit][i_time_step],  /* variable to add */
+    //             1.));                               /* coefficient */
+    //     }
+    //     SCIP_CALL( SCIPaddCons(p_scip, cons_demand_t));
+    //     m_constraint_demand.push_back(cons_demand_t);
+    // }
     
     
     //* startup constraints 
@@ -366,7 +368,7 @@ SCIP_RETCODE FormulationPricer::create_constraints()
             SCIP_CALL( SCIPaddCoefLinear(p_scip,
                 cons_min_uptime_i_t,
                 m_variable_x[i_unit][i_time_step],                           /** variable to add */
-                -11));                                    /** coefficient */
+                -1));                                    /** coefficient */
 
 
             for(int i_time_step2 = i_time_step - min_uptime[i_unit] + 1 ; i_time_step2 < i_time_step + 1; i_time_step2++)

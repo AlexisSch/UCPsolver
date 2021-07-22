@@ -35,6 +35,10 @@ SCIP_VAR* VariableMaster::get_variable_pointer()
     return( p_variable );
 }
 
+ProductionPlan* VariableMaster::get_production_plan()
+{
+    return( p_production_plan );
+}
 
 
 

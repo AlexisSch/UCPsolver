@@ -8,6 +8,10 @@
  * todo : improve commentaries / documentation. get the same thing everywhere.
  * check pierre's code + code from scip
  * todo : put on github
+ * put the same names everywhere. for instance_ucp;..
+ * change the class productionplan, it has two use at the same time, circular dependance
+ * todo : WHEN U HAVE FINISHED THE FIRST COLUMN GENERATION, CLEAN DIS CODE !!! 
+ * create the destructors and the gets, use smard pointers, add commentaries, etc.
 */
 
 
@@ -24,11 +28,12 @@
 /* user includes */
 #include "InstanceUCP.h"
 #include "FormulationPricer.h"
-#include "SolverUCP.h"
-#include "ProductionPlan.h"
-#include "VariableMaster.h"
 #include "FormulationMaster.h"
 #include "ObjPricerUCP.h"
+#include "FormulationCompact.h"
+#include "FormulationLinearRelaxation.h"
+#include "VariableMaster.h"
+#include "ProductionPlan.h"
 
 /* namespace */
 using namespace std;
@@ -76,30 +81,84 @@ int main(
 
     try
     {
+
+
+
         // lets get the informations about the instance in the dedicated object
         InstanceUCP *instance = new InstanceUCP( entry_data_filename );
         instance->print_instance();
 
-        // we get a first productionplan, bad but working
-        ProductionPlan production_plan( instance );
-        production_plan.computeCost();
-        production_plan.show();
+
+
+
+        /* COMPACT RESOLUTION */
+
+
+        SCIP* scip_compact(0);
+        SCIPcreate( &scip_compact );
+        SCIPincludeDefaultPlugins( scip_compact );
+        SCIPcreateProb(scip_compact, "UCP", 0, 0, 0, 0, 0, 0, 0);
+        SCIPsetIntParam(scip_compact, "display/verblevel", 3);
         
-        // Create the master problem, add the columns 
+        FormulationCompact *formulation_compact = new FormulationCompact( instance, scip_compact );
+        SCIPsolve( scip_compact );
+        ProductionPlan production_plan_compact( instance, formulation_compact);
+        production_plan_compact.show();
+
+
+        /* LINEAR RELAXATION */
+
+
+        SCIP* scip_lr(0);
+        SCIPcreate( &scip_lr );
+        SCIPincludeDefaultPlugins( scip_lr );
+        SCIPcreateProb(scip_lr, "UCP", 0, 0, 0, 0, 0, 0, 0);
+        SCIPsetIntParam(scip_lr, "display/verblevel", 3);
+        
+        FormulationLinearRelaxation *formulation_lr = new FormulationLinearRelaxation( instance, scip_lr );
+        SCIPsolve( scip_lr );
+        ProductionPlan production_plan_linear_relaxation( instance, formulation_lr);
+        production_plan_linear_relaxation.show();
+
+
+
+        /* COLUMN GENERATION */
+
+        
+        // Create the master problem
         SCIP* scip_master(0);
         SCIPcreate( &scip_master );
         SCIPincludeDefaultPlugins( scip_master );
-        SCIPcreateProbBasic(scip_master, "Master Problem");
-        SCIPsetIntParam(scip_master, "display/verblevel", 3);
+        SCIPcreateProb(scip_master, "UCP", 0, 0, 0, 0, 0, 0, 0);
+        SCIPsetIntParam(scip_master, "display/verblevel", 1);
         FormulationMaster *formulation_master = new FormulationMaster( instance, scip_master );
 
-        formulation_master->addColumn( &production_plan );
+        // create and add first column, with the worst plan, but working 8)
+        ProductionPlan* first_production_plan = new ProductionPlan( instance );
+        first_production_plan->computeCost();
+        string column_name = "column_0" ; 
+        SCIP_VAR* p_variable;
+        SCIPcreateVar(  scip_master,
+            &p_variable,                            // pointer 
+            column_name.c_str(),                            // name
+            0.,                                     // lowerbound
+            +SCIPinfinity( scip_master),            // upperbound
+            first_production_plan->get_cost(),          // coeff in obj function
+            SCIP_VARTYPE_CONTINUOUS,
+            true, false, NULL, NULL, NULL, NULL, NULL);
+        SCIPaddVar(scip_master, p_variable);
+        VariableMaster* first_column = new VariableMaster( p_variable, first_production_plan);
+        formulation_master->addColumn( first_column );
 
-        // Adding the pricer
+
+        // Create and add the pricer
 
         static const char* PRICER_NAME = "Pricer_UCP";
 
-        ObjPricerUCP *pricer_ucp = new ObjPricerUCP( scip_master, PRICER_NAME, formulation_master, instance );
+        ObjPricerUCP *pricer_ucp = new ObjPricerUCP( scip_master, PRICER_NAME, 
+            formulation_master, 
+            instance
+        );
         
         SCIPincludeObjPricer(scip_master, pricer_ucp, true);
         SCIPactivatePricer(scip_master, SCIPfindPricer(scip_master, PRICER_NAME));
@@ -108,9 +167,10 @@ int main(
         // solving
         SCIPsolve( scip_master );
 
-
         SCIPprintBestSol(scip_master, NULL, FALSE) ;
 
+        ProductionPlan* production_plan_column_generation = formulation_master->get_production_plan_from_solution();
+        production_plan_column_generation->show();
 
     }
     catch(const std::exception& e)

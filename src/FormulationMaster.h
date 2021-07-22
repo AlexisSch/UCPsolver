@@ -34,7 +34,7 @@ class FormulationMaster
     FormulationMaster( InstanceUCP* instance, SCIP* scip_master);
     ~FormulationMaster();
 
-    void addColumn( ProductionPlan* production_plan );
+    void addColumn( VariableMaster* variable_to_add );
 
     SCIP* get_scip_pointer();
 
@@ -42,12 +42,18 @@ class FormulationMaster
 
     SCIP_CONS* m_convexity_constraint;
     std::vector< SCIP_CONS* > m_complicating_constraints;
-    
-    private:
-    
-    InstanceUCP *p_instance;
-    SCIP *p_scip_master;
     std::vector< VariableMaster* > m_vector_columns;
+
+    InstanceUCP* p_instance;
+    SCIP* p_scip_master;
+
+
+
+    ProductionPlan* get_production_plan_from_solution();
+
+    private:
+    // InstanceUCP *p_instance;
+    // SCIP *p_scip_master;
 
     // SCIP_CONS* m_convexity_constraint;
     // std::vector< SCIP_CONS* > m_complicating_constraints;

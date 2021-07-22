@@ -46,13 +46,14 @@ class ObjPricerUCP : public ObjPricer
     SCIP_RETCODE SCIPpricerUCPActivate();
 
     /** perform pricing */
-    void ucp_pricing();
+    void ucp_pricing(SCIP* scip);
 
 
     private:
 
     FormulationMaster* p_formulation_master;
     InstanceUCP* p_instance_ucp;
+    std::vector< double > m_list_RMP_opt;
 
 };
 

@@ -28,6 +28,7 @@ class VariableMaster
     ~VariableMaster();
 
     SCIP_VAR* get_variable_pointer();
+    ProductionPlan* get_production_plan();
 
 
     private :

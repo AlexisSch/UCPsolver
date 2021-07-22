@@ -28,8 +28,10 @@ class FormulationPricer
 
     public : 
 
-    FormulationPricer(InstanceUCP *instance, SCIP *scip);
-    SCIP_RETCODE create_variables();
+    FormulationPricer(InstanceUCP *instance, SCIP *scip, std::vector<SCIP_Real> reduced_costs_demand );
+
+
+    SCIP_RETCODE create_variables( std::vector<SCIP_Real> reduced_costs_demand );
     SCIP_RETCODE create_constraints();
 
 
