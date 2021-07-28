@@ -12,7 +12,9 @@
 /* user includes */
 #include "InstanceUCP.h"
 #include "ProductionPlan.h"
-#include "FormulationPricer.h"
+
+// Unit Decomposition
+#include "UnitDecomposition/FormulationPricerUnitDecomposition.h"
 
 using namespace std; 
 
@@ -63,7 +65,7 @@ ProductionPlan::ProductionPlan( InstanceUCP* instance_ucp )
 }   
 
 
-ProductionPlan::ProductionPlan( InstanceUCP* instance_ucp, FormulationPricer* formulation_pricer )
+ProductionPlan::ProductionPlan( InstanceUCP* instance_ucp, FormulationPricerUnitDecomposition* formulation_pricer )
 {
     p_instance = instance_ucp;
     transform_solution_in_plan( formulation_pricer );
@@ -170,7 +172,7 @@ vector< vector< double > > ProductionPlan::get_quantity_plan()
 }
 
 
-void ProductionPlan::transform_solution_in_plan( FormulationPricer* formulation_pricer )
+void ProductionPlan::transform_solution_in_plan( FormulationPricerUnitDecomposition* formulation_pricer )
 {
 
     SCIP* scip_pricer = formulation_pricer->get_scip_pointer();

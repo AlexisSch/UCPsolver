@@ -47,18 +47,23 @@ include $(SCIPDIR)/make/make.project
 #-----------------------------------------------------------------------------
 
 MAINNAME	=	ucp.exe
-MAINOBJ		=	main.o \
-				InstanceUCP.o \
-				FormulationPricer.o \
-				SolverUCP.o \
-				ProductionPlan.o \
-				VariableMaster.o \
-				FormulationMaster.o \
-				ObjPricerUCP.o \
-				FormulationCompact.o \
-				FormulationLinearRelaxation.o
+
+
+# Add all the objects here
+MAINOBJ	=	main.o \
+			InstanceUCP.o \
+			ProductionPlan.o \
+			FormulationCompact.o \
+			FormulationLinearRelaxation.o \
+			Decomposition/FormulationMaster.o \
+			Decomposition/FormulationPricer.o \
+			Decomposition/VariableMaster.o \
+			UnitDecomposition/FormulationPricerUnitDecomposition.o \
+			UnitDecomposition/FormulationMasterUnitDecomposition.o \
+			UnitDecomposition/ObjPricerUCPUnitDecomposition.o
+
 									
-MAINSRC		=	$(addprefix $(SRCDIR)/,$(MAINOBJ:.o=.cpp))
+MAINSRC	=	$(addprefix $(SRCDIR)/,$(MAINOBJ:.o=.cpp))
 
 MAIN		=	$(MAINNAME).$(BASE).$(LPS)$(EXEEXTENSION)
 MAINFILE	=	$(BINDIR)/$(MAIN)
@@ -101,13 +106,6 @@ $(OBJDIR):
 $(BINDIR):
 		@-mkdir -p $(BINDIR)
 
-.PHONY: test
-test: $(MAINFILE)
-		for i in 1 2 4 8 16 ; do \
-			echo ; echo "Testing the n-tours solver with n = $$i" ; \
-			$(MAINFILE) $$i || exit $(STATUS) ; \
-			echo ; \
-		done
 
 .PHONY: clean
 clean:		$(OBJDIR)

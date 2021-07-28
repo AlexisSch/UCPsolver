@@ -15,9 +15,9 @@
 using namespace std;
 
 
+/* constructor */
 InstanceUCP::InstanceUCP(char* filename)
 {
-    cout << "Trying to extract data from the problem... \n";
     int error_code;
     error_code = read_data_from_file(filename);
     if(error_code != 0)
@@ -26,8 +26,15 @@ InstanceUCP::InstanceUCP(char* filename)
     }
 }
 
+/* destructor */
+InstanceUCP::~InstanceUCP()
+{
+
+}
 
 
+/* read the data from a file and puts it in the right places
+return 1 if everything went alright */
 int InstanceUCP::read_data_from_file(char *filename)
 {   
 
@@ -37,7 +44,7 @@ int InstanceUCP::read_data_from_file(char *filename)
         return 1;
     }
 
-    /* we read the data from the file, word by word. we store different words in different string or int */
+    /* we go over the whole file, word by word */
     string key;
     int value;
     string dummy;
@@ -183,6 +190,12 @@ void InstanceUCP::print_instance()
     cout << "Number of units : " << m_units_number << "\n";
     cout << "Number of time steps : " << m_time_steps_number << "\n";
 }
+
+
+
+
+/* gets */
+
 
 
 int InstanceUCP::get_units_number()

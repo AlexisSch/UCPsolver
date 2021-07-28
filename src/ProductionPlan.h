@@ -14,10 +14,14 @@
 #include <scip/scip.h>
 
 /* user includes */
+
+// Basics includes
 #include "InstanceUCP.h"
-#include "FormulationPricer.h"
 #include "FormulationCompact.h"
 #include "FormulationLinearRelaxation.h"
+
+// Unit decomposition
+#include "UnitDecomposition/FormulationPricerUnitDecomposition.h"
 
 
 class ProductionPlan
@@ -27,7 +31,7 @@ class ProductionPlan
 
     ProductionPlan(InstanceUCP* instance_ucp);
 
-    ProductionPlan(InstanceUCP* instance_ucp, FormulationPricer* formulation_pricer );
+    ProductionPlan(InstanceUCP* instance_ucp, FormulationPricerUnitDecomposition* formulation_pricer );
     ProductionPlan(InstanceUCP* instance_ucp, FormulationLinearRelaxation* formulation_linear );
     ProductionPlan(InstanceUCP* instance_ucp, FormulationCompact* formulation_compact );
 
@@ -41,7 +45,7 @@ class ProductionPlan
     double get_cost();
     std::vector< std::vector< double > > get_quantity_plan(); 
 
-    void transform_solution_in_plan( FormulationPricer* formulation_pricer );
+    void transform_solution_in_plan( FormulationPricerUnitDecomposition* formulation_pricer );
     void transform_solution_in_plan( FormulationCompact* formulation_compact );
     void transform_solution_in_plan( FormulationLinearRelaxation* formulation_linear );
 

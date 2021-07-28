@@ -21,34 +21,17 @@ using namespace std;
 
 
 
- 
-/**
- * function
- * @remark : can be a bit messy because stating the variable and constraints
- * takes a lot of spaces. An option would be to put it inside functions in a class constraints / variables ? 
-
-*/
-FormulationLinearRelaxation::FormulationLinearRelaxation(InstanceUCP *instance, SCIP *scip) : p_scip(0), p_ucp_instance(0)
+FormulationLinearRelaxation::FormulationLinearRelaxation(InstanceUCP *instance, SCIP *scip): 
+    p_scip(scip), p_ucp_instance(instance)
 {
 
-    p_scip = scip;
-    p_ucp_instance = instance;
-
-    SCIP_RETCODE retcode(SCIP_OKAY);
-    retcode = create_variables();
-    if ( retcode != SCIP_OKAY)
-    {
-        SCIPprintError( retcode );
-    }
-    retcode = create_constraints();
-    if ( retcode != SCIP_OKAY)
-    {
-        SCIPprintError( retcode );
-    }
-
+    create_variables();
+    create_constraints();
+    
 }
 
-/* create all the variable and add them to the object */
+
+
 SCIP_RETCODE FormulationLinearRelaxation::create_variables()
 {
     ostringstream current_var_name;
@@ -56,7 +39,7 @@ SCIP_RETCODE FormulationLinearRelaxation::create_variables()
     int time_step_number = p_ucp_instance->get_time_steps_number();
 
 
-    // Variables x
+    //* x 
 
     for(int i_unit = 0; i_unit < unit_number; i_unit ++)
     {
@@ -85,7 +68,7 @@ SCIP_RETCODE FormulationLinearRelaxation::create_variables()
     }
 
 
-    // Variables u
+    //* u
 
     for(int i_unit = 0; i_unit < unit_number; i_unit ++)
     {
@@ -115,7 +98,7 @@ SCIP_RETCODE FormulationLinearRelaxation::create_variables()
     }
    
    
-    // Variables p
+    //* p
 
     vector<int> prod_max( p_ucp_instance->get_production_max() );
     vector<int> cost_prop( p_ucp_instance->get_costs_proportionnal() );
@@ -144,20 +127,24 @@ SCIP_RETCODE FormulationLinearRelaxation::create_variables()
         m_variable_p.push_back(variable_p_i);
     }
     
-
     return( SCIP_OKAY );
-
 }
 
-/* create all the constraints, and add them to the scip object and formulation object */
+
+
+
 SCIP_RETCODE FormulationLinearRelaxation::create_constraints()
 {
+    // some usefull stuff
     ostringstream current_cons_name;
     int unit_number = p_ucp_instance->get_units_number();
     int time_step_number = p_ucp_instance->get_time_steps_number();
 
 
-    // //* demand constraint
+    // let's define all the constraints
+
+    //* demand constraint
+
     for(int i_time_step = 0; i_time_step < time_step_number; i_time_step++)
     {
         SCIP_CONS* cons_demand_t;
@@ -185,6 +172,8 @@ SCIP_RETCODE FormulationLinearRelaxation::create_constraints()
     }
     
     
+
+
     //* startup constraints 
 
     // the first initial state is different from the rest
@@ -256,6 +245,8 @@ SCIP_RETCODE FormulationLinearRelaxation::create_constraints()
         }
     m_constraint_startup.push_back(cons_startup_i);
     }
+
+
 
 
     //* production constraints
@@ -338,7 +329,8 @@ SCIP_RETCODE FormulationLinearRelaxation::create_constraints()
 
 
 
-    // //* Minimum uptime constraint
+
+    //* Minimum uptime constraint
     vector<int> min_uptime = p_ucp_instance->get_min_uptime();
     for(int i_unit = 0; i_unit < unit_number; i_unit ++)
     {
@@ -384,6 +376,8 @@ SCIP_RETCODE FormulationLinearRelaxation::create_constraints()
     }
     
 
+
+
     //* Minimum downtime constraint
     vector<int> min_downtime = p_ucp_instance->get_min_downtime();
     for(int i_unit = 0; i_unit < unit_number; i_unit ++)
@@ -424,29 +418,29 @@ SCIP_RETCODE FormulationLinearRelaxation::create_constraints()
         }
      }
 
-
     return( SCIP_OKAY );
 }
 
+
+
+
+
+/* gets */
 
 SCIP* FormulationLinearRelaxation::get_scip_pointer()
 {
     return( p_scip );
 }
 
-
-
 std::vector< std::vector< SCIP_VAR* >> FormulationLinearRelaxation::get_variable_u()
 {
     return( m_variable_u );
 }
 
-
 std::vector< std::vector< SCIP_VAR* >> FormulationLinearRelaxation::get_variable_x()
 {
     return( m_variable_x );
 }
-
 
 std::vector< std::vector< SCIP_VAR* >> FormulationLinearRelaxation::get_variable_p()
 {

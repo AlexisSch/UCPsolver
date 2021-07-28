@@ -1,4 +1,4 @@
-
+/* implements the class FormulationCompact */
 
 /* standart includes */
 #include <vector>
@@ -12,6 +12,7 @@
 #include <scip/scip.h>
 
 /* user includes */
+
 #include "InstanceUCP.h"
 #include "FormulationCompact.h"
 
@@ -21,18 +22,9 @@ using namespace std;
 
 
 
- 
-/**
- * function
- * @remark : can be a bit messy because stating the variable and constraints
- * takes a lot of spaces. An option would be to put it inside functions in a class constraints / variables ? 
-
-*/
-FormulationCompact::FormulationCompact(InstanceUCP *instance, SCIP *scip) : p_scip(0), p_ucp_instance(0)
+FormulationCompact::FormulationCompact(InstanceUCP *instance, SCIP *scip) : 
+    p_scip(scip), p_ucp_instance(instance)
 {
-
-    p_scip = scip;
-    p_ucp_instance = instance;
 
     SCIP_RETCODE retcode(SCIP_OKAY);
     retcode = create_variables();
@@ -48,7 +40,8 @@ FormulationCompact::FormulationCompact(InstanceUCP *instance, SCIP *scip) : p_sc
 
 }
 
-/* create all the variable and add them to the object */
+
+
 SCIP_RETCODE FormulationCompact::create_variables()
 {
     ostringstream current_var_name;
@@ -56,7 +49,7 @@ SCIP_RETCODE FormulationCompact::create_variables()
     int time_step_number = p_ucp_instance->get_time_steps_number();
 
 
-    // Variables x
+    //* x
 
     for(int i_unit = 0; i_unit < unit_number; i_unit ++)
     {
@@ -85,7 +78,7 @@ SCIP_RETCODE FormulationCompact::create_variables()
     }
 
 
-    // Variables u
+    //* u
 
     for(int i_unit = 0; i_unit < unit_number; i_unit ++)
     {
@@ -115,7 +108,7 @@ SCIP_RETCODE FormulationCompact::create_variables()
     }
    
    
-    // Variables p
+    //* p
 
     vector<int> prod_max( p_ucp_instance->get_production_max() );
     vector<int> cost_prop( p_ucp_instance->get_costs_proportionnal() );
@@ -149,7 +142,8 @@ SCIP_RETCODE FormulationCompact::create_variables()
 
 }
 
-/* create all the constraints, and add them to the scip object and formulation object */
+
+
 SCIP_RETCODE FormulationCompact::create_constraints()
 {
     ostringstream current_cons_name;
@@ -157,7 +151,7 @@ SCIP_RETCODE FormulationCompact::create_constraints()
     int time_step_number = p_ucp_instance->get_time_steps_number();
 
 
-    // //* demand constraint
+    //* demand constraint
     for(int i_time_step = 0; i_time_step < time_step_number; i_time_step++)
     {
         SCIP_CONS* cons_demand_t;
@@ -338,7 +332,7 @@ SCIP_RETCODE FormulationCompact::create_constraints()
 
 
 
-    // //* Minimum uptime constraint
+    //* Minimum uptime constraint
     vector<int> min_uptime = p_ucp_instance->get_min_uptime();
     for(int i_unit = 0; i_unit < unit_number; i_unit ++)
     {
@@ -427,6 +421,13 @@ SCIP_RETCODE FormulationCompact::create_constraints()
 
     return( SCIP_OKAY );
 }
+
+
+
+
+
+/* gets */
+
 
 
 SCIP* FormulationCompact::get_scip_pointer()
