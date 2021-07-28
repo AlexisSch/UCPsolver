@@ -51,15 +51,19 @@ MAINNAME	=	ucp.exe
 
 # Add all the objects here
 MAINOBJ	=	main.o \
-			InstanceUCP.o \
-			ProductionPlan.o \
-			FormulationCompact.o \
-			FormulationLinearRelaxation.o \
+			\
+			DataClasses/InstanceUCP.o \
+			DataClasses/ProductionPlan.o \
+			\
+			OtherResolution/FormulationCompact.o \
+			OtherResolution/FormulationLinearRelaxation.o \
+			\
 			Decomposition/FormulationMaster.o \
 			Decomposition/FormulationPricer.o \
 			Decomposition/VariableMaster.o \
-			UnitDecomposition/FormulationPricerUnitDecomposition.o \
+			\
 			UnitDecomposition/FormulationMasterUnitDecomposition.o \
+			UnitDecomposition/FormulationPricerUnitDecomposition.o \
 			UnitDecomposition/ObjPricerUCPUnitDecomposition.o
 
 									

@@ -1,27 +1,36 @@
 /** 
  * @class FormulationMaster
- ** An object from this class has the variable and constraints defining a Dantzig Wolfe reformulation.
- *  todo : improve the printing to get it with cout ?
 */
 
 #ifndef FormulationMaster_H
 #define FormulationMaster_H
 
 
-/* standart includes */
+
+//** Includes
+
+//* Standart
 #include <vector>
 #include <iostream>
 #include <string>
 #include <fstream>
+#include <sstream>
 
-/* SCIP includes */
+
+//* SCIP
+#include <scip/scipdefplugins.h>
 #include <scip/scip.h>
 
-/* user includes */
-#include "InstanceUCP.h"
-#include "VariableMaster.h"
 
-/* namespace */
+//* User
+
+// general
+#include "DataClasses/InstanceUCP.h"
+#include "DataClasses/ProductionPlan.h"
+
+// Decomposition
+#include "Decomposition/FormulationMaster.h"
+#include "Decomposition/VariableMaster.h"
 
 
 
@@ -30,22 +39,36 @@ class FormulationMaster
 
     public:
     
-        /* constructor */
+        /**
+         *  constructor 
+         * @param instance
+         * @param scip
+         * 
+        */
         FormulationMaster( InstanceUCP* instance, SCIP* scip_master);
 
-        /* destructor */
+        /**
+         * destructor
+        */
         virtual ~FormulationMaster()
         {}
 
-        /* goes over the columns selected to get the current best plan */
+        /**
+         * @brief goes over the columns selected to get the current best plan 
+         * @return a pointer to the production plan
+        */
         ProductionPlan* get_production_plan_from_solution();
 
-        /* adds a column to the restricted master problem . Pure virtual function */
+        /**
+         * 
+         * @brief adds a column to the restricted master problem . Pure virtual function 
+         * 
+        */
         virtual void add_column( VariableMaster* variable_to_add ) = 0;
 
 
 
-        /* gets */
+        //* gets
 
         SCIP* get_scip_pointer();
         InstanceUCP* get_instance();

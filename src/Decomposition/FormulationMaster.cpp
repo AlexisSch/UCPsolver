@@ -1,26 +1,42 @@
-/* Implements the class FormulationMaster */
+/**
+ * @file FormulationMaster.cpp
+ *  Implements the class FormulationMaster 
+ * 
+*/
 
-/* standart includes */
+
+//** Includes
+
+//* Standart
 #include <vector>
 #include <iostream>
 #include <string>
 #include <fstream>
 #include <sstream>
 
-/* SCIP includes */
+
+//* SCIP
 #include <scip/scipdefplugins.h>
 #include <scip/scip.h>
 
-/* user includes */
-#include "InstanceUCP.h"
-#include "FormulationMaster.h"
-#include "VariableMaster.h"
-#include "ProductionPlan.h"
 
-/* namespace */
+//* User
+
+// general
+#include "DataClasses/InstanceUCP.h"
+#include "DataClasses/ProductionPlan.h"
+
+// Decomposition
+#include "Decomposition/FormulationMaster.h"
+#include "Decomposition/VariableMaster.h"
+
+
+
+//** Namespaces
 using namespace std;
 
-/** constructor */
+
+
 FormulationMaster::FormulationMaster( InstanceUCP* instance, SCIP* scip_master)
 {
     m_instance = instance;

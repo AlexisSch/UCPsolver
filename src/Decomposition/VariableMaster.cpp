@@ -1,21 +1,34 @@
+/**
+ * @file VariableMaster.cpp
+ * 
+ * 
+*/
 
-/* Implement the class ProductionPlan */
 
+//** Includes
 
-/* standart includes */
+//* Standart
 #include <vector>
 #include <iostream>
 
 
-/* SCIP includes */
+//* SCIP
 #include <scip/scipdefplugins.h>
 #include <scip/scip.h>
 
-/* user includes */
-#include "VariableMaster.h"
-#include "ProductionPlan.h"
 
-using namespace std; 
+//* User
+
+// general
+#include "DataClasses/ProductionPlan.h"
+
+// Decomposition
+#include "Decomposition/VariableMaster.h"
+
+
+
+//** Namespaces
+using namespace std;
 
 
 

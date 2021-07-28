@@ -1,6 +1,7 @@
-/** 
- * @file main
- ** We pilote the solving of a UCP problem from here.
+/**
+ * @file main.cpp
+ * 
+ * * We pilote the solving of a UCP problem from here.
  * todo : understand what namespace is, errors catching ? 
  * todo : put on github
  * change the class productionplan, it has two use at the same time, circular dependance
@@ -9,7 +10,7 @@
 
 
 /**
- * Welcome to this code used to solve the UCP
+ * * Welcome to this code used to solve the UCP
  * 
  * 
  * 
@@ -22,23 +23,25 @@
 
 
 
-/* standart includes */
+//* Standart includes
 #include <vector>
 #include <iostream>
 #include <string>
 #include <fstream>
 
-/* SCIP includes */
+//* SCIP includes
 #include <scip/scipdefplugins.h>
 #include <scip/scip.h>
 
-/* user includes */
+//* User includes
 
-// Basics includes
-#include "InstanceUCP.h"
-#include "ProductionPlan.h"
-#include "FormulationCompact.h"
-#include "FormulationLinearRelaxation.h"
+// Data includes
+#include "DataClasses/InstanceUCP.h"
+#include "DataClasses/ProductionPlan.h"
+
+// Other Resolutions includes
+#include "OtherResolution/FormulationCompact.h"
+#include "OtherResolution/FormulationLinearRelaxation.h"
 
 // Decomposition
 #include "Decomposition/FormulationMaster.h"
@@ -48,7 +51,8 @@
 #include "UnitDecomposition/FormulationMasterUnitDecomposition.h"
 #include "UnitDecomposition/ObjPricerUCPUnitDecomposition.h"
 
-/* namespace */
+
+//* Namespaces
 using namespace std;
 
 
@@ -61,7 +65,6 @@ SCIP_RETCODE read_arguments( int argc,
     int &time_limit, 
     int &display_verbosity )
 {
-    exit_file_name = "";
     must_write_data_out = false;
     time_limit = 100;
     display_verbosity = 0;
@@ -109,7 +112,8 @@ int main(
 {
 
     cerr << "Welcome to this UCP solver ! " << endl << endl;
-    /* we define some parameters usefull for the resolution */
+
+    //* Definition of usefull parameters
     SCIP_RETCODE retcode;
     char* entry_file_name;
     char* exit_file_name;
@@ -124,11 +128,11 @@ int main(
     }
     
 
-    // get the instance
+    //* Get informations about the instance
     InstanceUCP *instance = new InstanceUCP( entry_file_name );
 
 
-    /* COMPACT RESOLUTION */
+    //* Compact resolution
 
     SCIP* scip_compact(0);
     SCIPcreate( &scip_compact );
@@ -142,7 +146,7 @@ int main(
     cerr << "Cost of integer optimum : " << production_plan_compact.get_cost() << endl;
 
 
-    /* LINEAR RELAXATION */
+    //* Linear relaxation
 
     SCIP* scip_lr(0);
     SCIPcreate( &scip_lr );
@@ -157,7 +161,7 @@ int main(
 
 
 
-    /* COLUMN GENERATION */
+    //* Column generation
 
     
     // Create the master problem and add the pricer

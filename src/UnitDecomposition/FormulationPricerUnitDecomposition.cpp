@@ -1,23 +1,37 @@
+/**
+ * @file
+ * 
+*/
 
+//** Includes
 
-/* standart includes */
+//* Standart
 #include <vector>
 #include <iostream>
 #include <string>
 #include <fstream>
 #include <sstream>
 
-/* SCIP includes */
+
+//* SCIP
 #include <scip/scipdefplugins.h>
 #include <scip/scip.h>
 
-/* user includes */
-#include "InstanceUCP.h"
-#include "FormulationPricerUnitDecomposition.h"
-#include"../Decomposition/FormulationPricer.h"
+
+//* User
+
+// general
+#include "DataClasses/InstanceUCP.h"
+#include "DataClasses/ProductionPlan.h"
+
+// Decomposition
+#include "Decomposition/FormulationPricer.h"
+
+// Unit Decomposition
+#include "UnitDecomposition/FormulationPricerUnitDecomposition.h"
 
 
-/* namespace */
+//** Namespaces
 using namespace std;
 
 

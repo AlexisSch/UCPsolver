@@ -1,24 +1,36 @@
 /** 
  * @class Pricer.h
  ** Allows SCIP to make a column generation. Tell what is the pricing problem
- *  todo : get it working
 */
 
 #ifndef ObjPricerUCPUnitDecomposition_H
 #define ObjPricerUCPUnitDecomposition_H
 
-/* standart includes */
+//** Includes
+
+//* Standart
 #include <vector>
 
-/* SCIP includes */
 
+//* SCIP
 #include "objscip/objpricer.h"
 #include "scip/pub_var.h"
+#include <scip/scip.h>
 
-/* user includes */
-#include "InstanceUCP.h"
-#include "FormulationMasterUnitDecomposition.h"
 
+//* User 
+
+// general
+#include "DataClasses/InstanceUCP.h"
+
+// Decomposition
+#include "Decomposition/FormulationPricer.h"
+
+// Unit Decomposition
+#include "UnitDecomposition/FormulationMasterUnitDecomposition.h"
+
+
+//** Namespace 
 using namespace scip;
 
 class ObjPricerUCPUnitDecomposition : public ObjPricer

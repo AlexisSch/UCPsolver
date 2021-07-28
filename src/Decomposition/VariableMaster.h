@@ -6,15 +6,26 @@
 #ifndef VARIABLEMASTER_H
 #define VARIABLEMASTER_H
 
-/* standart includes */
-#include <vector>
 
-/* SCIP includes */
+//** Includes
+
+//* Standart
+#include <vector>
+#include <iostream>
+
+
+//* SCIP
 #include <scip/scipdefplugins.h>
 #include <scip/scip.h>
 
-/* user includes */
-#include "ProductionPlan.h"
+
+//* User
+
+// general
+#include "DataClasses/ProductionPlan.h"
+
+// Decomposition
+#include "Decomposition/VariableMaster.h"
 
 
 

@@ -1,30 +1,38 @@
 /** 
  * @class FormulationMasterUnitDecomposition
- ** An object from this class has the variable and constraints defining a Dantzig Wolfe reformulation.
- *  todo : improve the printing to get it with cout ?
 */
 
 #ifndef FormulationMasterUnitDecomposition_H
 #define FormulationMasterUnitDecomposition_H
 
 
-/* standart includes */
+//** Includes
+
+//* Standart
 #include <vector>
 #include <iostream>
 #include <string>
 #include <fstream>
+#include <sstream>
 
-/* SCIP includes */
+
+//* SCIP
+#include <scip/scipdefplugins.h>
 #include <scip/scip.h>
 
-/* user includes */
-#include "InstanceUCP.h"
 
-#include "../Decomposition/VariableMaster.h"
-#include "../Decomposition/FormulationMaster.h"
+//* User
 
+// general
+#include "DataClasses/InstanceUCP.h"
+#include "DataClasses/ProductionPlan.h"
 
-/* namespace */
+// Decomposition
+#include "Decomposition/FormulationMaster.h"
+#include "Decomposition/VariableMaster.h"
+
+// Unit Decomposition
+#include "UnitDecomposition/FormulationMasterUnitDecomposition.h"
 
 
 
@@ -33,22 +41,23 @@ class FormulationMasterUnitDecomposition : public FormulationMaster
 
     public:
     
-        /* constructor */
+        /**
+         *  constructor 
+        */
         FormulationMasterUnitDecomposition( InstanceUCP* instance, SCIP* scip_master);
 
-        /* destructor */
+        /**
+         *  destructor 
+        */
         ~FormulationMasterUnitDecomposition();
 
-        /* adds a column to the restricted master problem */
+        /**
+         * @brief adds a column to the restricted master problem 
+        */
         void add_column( VariableMaster* variable_to_add );
 
-        /* goes over the columns selected to get the current best plan */
-        //ProductionPlan* get_production_plan_from_solution();
 
-
-
-
-        /* gets */
+        //* gets
 
         SCIP_CONS** get_convexity_constraint();
         SCIP_CONS** get_complicating_constraints(int i_time_step);
@@ -56,7 +65,7 @@ class FormulationMasterUnitDecomposition : public FormulationMaster
 
     private:
 
-        /* constraints */
+        // constraints
         std::vector< SCIP_CONS* > m_complicating_constraints;
         SCIP_CONS* m_convexity_constraint;
 

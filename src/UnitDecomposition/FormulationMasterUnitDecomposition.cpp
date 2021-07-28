@@ -1,28 +1,46 @@
-/* Implements the class FormulationMasterUnitDecompositionUnitDecomposition */
+/**
+ * 
+ *  Implements the class FormulationMasterUnitDecompositionUnitDecomposition 
+*/
 
-/* standart includes */
+
+
+
+
+//** Includes
+
+//* Standart
 #include <vector>
 #include <iostream>
 #include <string>
 #include <fstream>
 #include <sstream>
 
-/* SCIP includes */
+
+//* SCIP
 #include <scip/scipdefplugins.h>
 #include <scip/scip.h>
 
-/* user includes */
-#include "InstanceUCP.h"
-#include "FormulationMasterUnitDecomposition.h"
-#include "../Decomposition/FormulationMaster.h"
 
-#include "../Decomposition/VariableMaster.h"
-#include "ProductionPlan.h"
+//* User
 
-/* namespace */
+// general
+#include "DataClasses/InstanceUCP.h"
+#include "DataClasses/ProductionPlan.h"
+
+// Decomposition
+#include "Decomposition/FormulationMaster.h"
+#include "Decomposition/VariableMaster.h"
+
+// Unit Decomposition
+#include "UnitDecomposition/FormulationMasterUnitDecomposition.h"
+
+//** Relaxation
 using namespace std;
 
-/** constructor */
+
+
+
 FormulationMasterUnitDecomposition::FormulationMasterUnitDecomposition( InstanceUCP* instance, SCIP* scip_master):
     FormulationMaster(instance, scip_master)
 {

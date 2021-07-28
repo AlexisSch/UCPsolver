@@ -7,37 +7,62 @@
 #define FormulationPricer_H
 
 
-/* standart includes */
+//** Includes
+
+//* Standart
 #include <vector>
 #include <iostream>
 #include <string>
 #include <fstream>
+#include <sstream>
 
-/* SCIP includes */
+
+//* SCIP
+#include <scip/scipdefplugins.h>
 #include <scip/scip.h>
 
-/* user includes */
-#include "InstanceUCP.h"
 
-/* namespace */
+//* User
+
+// general
+#include "DataClasses/InstanceUCP.h"
+
+// Decomposition
+#include "Decomposition/FormulationPricer.h"
+
+
 
 class FormulationPricer
 {
 
     public : 
 
-        //* constructor
+        /** 
+         * constructor
+        */
         FormulationPricer(InstanceUCP *instance, SCIP *scip );
 
-        //* virtual destructor
+        /** 
+         * virtual destructor
+        */
         virtual ~FormulationPricer()
         {}
 
-        //* Pure virtual functions
+        /** 
+         * Pure virtual function
+         *
+        */
         virtual SCIP_RETCODE create_variables( std::vector<SCIP_Real> reduced_costs_demand ) = 0;
+        /** 
+         * Pure virtual function
+         *
+        */
         virtual SCIP_RETCODE create_constraints() = 0;
 
+
+
         //* gets
+
         SCIP* get_scip_pointer();
     
 

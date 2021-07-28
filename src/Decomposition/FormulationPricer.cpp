@@ -1,21 +1,38 @@
-/** 
- * @file
- * Implements the class FormulationPricer 
+/**
+ * @file FormulationPricer.cpp
+ *  Implements the class FormulationMaster 
  * 
 */
 
-// standart includes
 
-// SCIP includes 
+//** Includes
+
+//* Standart
+#include <vector>
+#include <iostream>
+#include <string>
+#include <fstream>
+#include <sstream>
+
+
+//* SCIP
 #include <scip/scipdefplugins.h>
 #include <scip/scip.h>
 
-// user includes 
-#include "InstanceUCP.h"
-#include "FormulationPricer.h"
 
-// namespace
+//* User
+
+// general
+#include "DataClasses/InstanceUCP.h"
+
+// Decomposition
+#include "Decomposition/FormulationPricer.h"
+
+
+
+//** Namespaces
 using namespace std;
+
 
 
 

@@ -1,23 +1,36 @@
-/** Implement the class ObjPricerUCPUnitDecomposition */
+/** 
+ * @file
+ * Implement the class ObjPricerUCPUnitDecomposition 
+*/
 
 
-/* standart includes */
+//** Includes
+
+//* Standart
 #include <vector>
 
-/* SCIP includes */
-#include <scip/scipdefplugins.h>
+
+//* SCIP
+#include "objscip/objpricer.h"
+#include "scip/pub_var.h"
 #include <scip/scip.h>
 
-/* user includes */
-#include "ObjPricerUCPUnitDecomposition.h"
-#include "FormulationMasterUnitDecomposition.h"
-#include "FormulationPricerUnitDecomposition.h"
-#include "InstanceUCP.h"
+
+//* User 
+
+// general
+#include "DataClasses/InstanceUCP.h"
+
+// Decomposition
+#include "Decomposition/FormulationPricer.h"
+
+// Unit Decomposition
+#include "UnitDecomposition/FormulationMasterUnitDecomposition.h"
+#include "UnitDecomposition/FormulationPricerUnitDecomposition.h"
+#include "UnitDecomposition/ObjPricerUCPUnitDecomposition.h"
 
 
-
-
-/* namespace */
+//** Namespaces
 
 using namespace std;
 using namespace scip;
