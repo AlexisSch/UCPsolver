@@ -21,3 +21,7 @@ In the src folder, you can find all the code in .cpp or .h files. It is organise
 - you can also find a bunch of other cpp and h files corresponding to things that are generic. They may be moved elsewhere later.
 - In the /Decomposition folder, you can find a bunch of stuff needed by all decompositions. First, the VariableMaster, which have so far the same structure for every decomposition. Then FormulationMaster and FormulationPricer, which are abstract class. You will need to derive these classes in your decomposition, adding the correct constraints to get the column generation working
 - For a decomposition, there should be a folder /MyDecomposition, where there should be 3 classes : FormulationMasterMyDecomposition and FormulationPricerMyDecomposition, derived from the classes from /decomposition, and ObjPricerUCPMyDecomposition, which is derived from ObjPricer, a class from SCIP. This class allows us to tell SCIP how to get the column generation rolling.
+
+
+
+You could create classes for every block of a decomposition ?

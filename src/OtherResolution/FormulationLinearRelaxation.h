@@ -17,7 +17,6 @@
 
 
 //* SCIP
-#include <scip/scipdefplugins.h>
 #include <scip/scip.h>
 
 
@@ -25,9 +24,7 @@
 
 // general
 #include "DataClasses/InstanceUCP.h"
-
-// Decomposition
-#include "OtherResolution/FormulationLinearRelaxation.h"
+#include "DataClasses/ProductionPlan.h"
 
 
 class FormulationLinearRelaxation
@@ -46,19 +43,13 @@ class FormulationLinearRelaxation
         /* create the constraints, add them to scip problem and store them */
         SCIP_RETCODE create_constraints();
 
-        /* gets */
-        SCIP* get_scip_pointer();
-        
-        std::vector< std::vector< SCIP_VAR* >> get_variable_u();
-        std::vector< std::vector< SCIP_VAR* >> get_variable_x();
-        std::vector< std::vector< SCIP_VAR* >> get_variable_p();
-
+        ProductionPlan* get_production_plan_from_solution();
 
 
     private:
 
-        SCIP *p_scip;
-        InstanceUCP *p_ucp_instance;
+        SCIP *m_scip;
+        InstanceUCP *m_instance_ucp;
 
         /* variables */
         std::vector< std::vector< SCIP_VAR* >> m_variable_u;

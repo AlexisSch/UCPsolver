@@ -45,6 +45,23 @@ FormulationMasterUnitDecomposition::FormulationMasterUnitDecomposition( Instance
     FormulationMaster(instance, scip_master)
 {
 
+    create_constraints();
+
+    create_and_add_first_columns();
+
+}
+
+
+
+
+FormulationMasterUnitDecomposition::~FormulationMasterUnitDecomposition()
+{
+}
+
+
+
+void FormulationMasterUnitDecomposition::create_constraints()
+{
     // creating the constraints
     ostringstream current_cons_name;
 
@@ -69,11 +86,10 @@ FormulationMasterUnitDecomposition::FormulationMasterUnitDecomposition( Instance
     SCIPaddCons( m_scip_master, m_convexity_constraint );
 
 
-
-    // Complicating constraints
-    int number_time_step( m_instance->get_time_steps_number() );
+    // Demand constraints
+    int number_time_step( m_instance_ucp->get_time_steps_number() );
     m_complicating_constraints.resize( number_time_step );
-    vector<int> demand( m_instance->get_demand() );
+    vector<int> demand( m_instance_ucp->get_demand() );
     for( int i_time_step = 0; i_time_step < number_time_step; i_time_step ++)
     {
         SCIP_CONS* demand_constraint_t;
@@ -101,10 +117,59 @@ FormulationMasterUnitDecomposition::FormulationMasterUnitDecomposition( Instance
 
 
 
-
-FormulationMasterUnitDecomposition::~FormulationMasterUnitDecomposition()
+void FormulationMasterUnitDecomposition::create_and_add_first_columns()
 {
+    int number_of_units( m_instance_ucp->get_units_number() );
+    int number_of_time_steps( m_instance_ucp->get_time_steps_number() );
+    vector<int> initial_state( m_instance_ucp->get_initial_state());
+    vector<int> maximum_production( m_instance_ucp->get_production_max());
+
+    // Create an plan with every units working at every time steps
+    vector< vector < double > > up_down_plan;
+    vector< vector < double > > switch_plan;
+    vector< vector < double > > quantity_plan;
+    up_down_plan.resize(number_of_units);
+    switch_plan.resize(number_of_units);
+    quantity_plan.resize(number_of_units);
+
+    for( int i_unit = 0; i_unit < number_of_units; i_unit ++)
+    {
+        up_down_plan[i_unit].resize(number_of_time_steps);
+        quantity_plan[i_unit].resize(number_of_time_steps);
+
+        for( int i_time_step = 0; i_time_step < number_of_time_steps; i_time_step++)
+        {
+            up_down_plan[i_unit][i_time_step] = 1.;
+            quantity_plan[i_unit][i_time_step] = maximum_production[i_unit];
+        }   
+
+        switch_plan[i_unit].resize(number_of_time_steps, 0);        
+        if( initial_state[i_unit] == 0 )
+        {
+            switch_plan[i_unit][0] = 1;
+        }
+
+    }
+    ProductionPlan* new_plan = new ProductionPlan( m_instance_ucp, up_down_plan, switch_plan, quantity_plan );
+    new_plan->compute_cost();
+
+    // create and add the column
+    string column_name = "column_0" ; 
+    SCIP_VAR* p_variable;
+    SCIPcreateVar(  m_scip_master,
+        &p_variable,                            // pointer 
+        column_name.c_str(),                            // name
+        0.,                                     // lowerbound
+        +SCIPinfinity( m_scip_master),            // upperbound
+        new_plan->get_cost(),          // coeff in obj function
+        SCIP_VARTYPE_CONTINUOUS,
+        true, false, NULL, NULL, NULL, NULL, NULL);
+    SCIPaddVar(m_scip_master, p_variable);
+    VariableMaster* first_column = new VariableMaster( p_variable, new_plan);
+    add_column( first_column );
+
 }
+
 
 
 void FormulationMasterUnitDecomposition::add_column( VariableMaster* variable_to_add )
@@ -119,12 +184,12 @@ void FormulationMasterUnitDecomposition::add_column( VariableMaster* variable_to
                 1.);         /* coefficient */        
     
     // add column to demand constraints
-    int number_time_step( m_instance->get_time_steps_number() );
+    int number_time_step( m_instance_ucp->get_time_steps_number() );
     vector<vector<double>> quantity_plan = variable_to_add->get_production_plan()->get_quantity_plan();
     for( int i_time_step = 0; i_time_step < number_time_step; i_time_step++ )
     {
         double quantity_plan_t(0);
-        for( int i_unit = 0; i_unit < m_instance->get_units_number(); i_unit++ )
+        for( int i_unit = 0; i_unit < m_instance_ucp->get_units_number(); i_unit++ )
         {
             quantity_plan_t += quantity_plan[i_unit][i_time_step];
         }

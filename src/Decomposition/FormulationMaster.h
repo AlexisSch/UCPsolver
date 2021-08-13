@@ -67,6 +67,11 @@ class FormulationMaster
         virtual void add_column( VariableMaster* variable_to_add ) = 0;
 
 
+        virtual void create_constraints() = 0;
+
+        virtual void create_and_add_first_columns() = 0;
+
+
 
         //* gets
 
@@ -80,7 +85,7 @@ class FormulationMaster
     protected:
 
 
-        InstanceUCP *m_instance;
+        InstanceUCP *m_instance_ucp;
         SCIP *m_scip_master;
 
         //* variables

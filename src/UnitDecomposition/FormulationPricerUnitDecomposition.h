@@ -29,8 +29,6 @@
 // Decomposition
 #include "Decomposition/FormulationPricer.h"
 
-// Unit Decomposition
-#include "UnitDecomposition/FormulationPricerUnitDecomposition.h"
 
 
 /* namespace */
@@ -46,21 +44,14 @@ class FormulationPricerUnitDecomposition : public FormulationPricer
 
         //* destructor
         ~FormulationPricerUnitDecomposition()
-        {};
+        {}
 
+
+        ProductionPlan* get_production_plan_from_solution();
 
         //* virtual functions
         SCIP_RETCODE create_variables( std::vector<SCIP_Real> reduced_costs_demand );
         SCIP_RETCODE create_constraints();
-
-
-        //* gets
-        
-        std::vector< std::vector< SCIP_VAR* >> get_variable_u();
-        std::vector< std::vector< SCIP_VAR* >> get_variable_x();
-        std::vector< std::vector< SCIP_VAR* >> get_variable_p();
-
-
 
 
     private:

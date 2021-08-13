@@ -57,6 +57,11 @@ class FormulationMasterUnitDecomposition : public FormulationMaster
         void add_column( VariableMaster* variable_to_add );
 
 
+        void create_constraints();
+
+        void create_and_add_first_columns();
+
+
         //* gets
 
         SCIP_CONS** get_convexity_constraint();

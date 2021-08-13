@@ -38,16 +38,25 @@ class VariableMaster
     VariableMaster( SCIP_VAR* column_variable, ProductionPlan* production_plan );
     ~VariableMaster();
 
+    void add_block_number(int block_number);
+
+
+
+    //* gets
+
     SCIP_VAR* get_variable_pointer();
     ProductionPlan* get_production_plan();
+    int get_block_number();
 
 
     private :
 
-    ProductionPlan* p_production_plan;
-    SCIP_VAR* p_variable;
+    ProductionPlan* m_production_plan;
+    SCIP_VAR* m_scip_variable;
 
     char* p_variable_name;
+
+    int m_block_number; /** < number of the block */
 
 
 

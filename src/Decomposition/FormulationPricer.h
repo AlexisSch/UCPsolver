@@ -68,8 +68,8 @@ class FormulationPricer
 
     protected:
 
-        SCIP *m_scip;
-        InstanceUCP *m_instance;
+        SCIP *m_scip_pricer;
+        InstanceUCP *m_instance_ucp;
 
         //* variables : defined in derived classes
 

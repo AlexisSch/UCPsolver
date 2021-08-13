@@ -46,7 +46,7 @@ ObjPricerUCPUnitDecomposition::ObjPricerUCPUnitDecomposition(
     ObjPricer(scip_master, name, "Pricer", 0, TRUE)
 {
     m_formulation_master = formulation_master;
-    p_instance_ucp = instance_ucp;
+    m_instance_ucp = instance_ucp;
 }
 
 
@@ -64,7 +64,7 @@ ObjPricerUCPUnitDecomposition::~ObjPricerUCPUnitDecomposition()
 SCIP_DECL_PRICERINIT(ObjPricerUCPUnitDecomposition::scip_init)
 {
     
-    int number_time_steps( p_instance_ucp->get_time_steps_number());
+    int number_time_steps( m_instance_ucp->get_time_steps_number());
     for(int i_time_step = 0; i_time_step < number_time_steps; i_time_step ++ ) 
     {
         SCIP_CALL( SCIPgetTransformedCons( scip, 
@@ -111,7 +111,7 @@ void ObjPricerUCPUnitDecomposition::ucp_pricing(SCIP* scip)
     m_list_RMP_opt.push_back( SCIPgetPrimalbound( scip ) );
 
     //* get the reduced costs
-    int number_time_steps( p_instance_ucp->get_time_steps_number());
+    int number_time_steps( m_instance_ucp->get_time_steps_number());
     vector< SCIP_Real > reduced_cost_demand;
     reduced_cost_demand.resize( number_time_steps );
     SCIP_CONS* current_constraint(0);
@@ -131,7 +131,7 @@ void ObjPricerUCPUnitDecomposition::ucp_pricing(SCIP* scip)
     SCIPincludeDefaultPlugins( scip_pricer );
     SCIPcreateProb(scip_pricer, "UCP_PRICER_PROBLEM", 0, 0, 0, 0, 0, 0, 0);
     SCIPsetIntParam(scip_pricer, "display/verblevel", 0);
-    FormulationPricerUnitDecomposition *formulation_pricer = new FormulationPricerUnitDecomposition( p_instance_ucp, scip_pricer, reduced_cost_demand );
+    FormulationPricerUnitDecomposition formulation_pricer( m_instance_ucp, scip_pricer, reduced_cost_demand );
     SCIPsolve( scip_pricer );
     // SCIPprintBestSol(scip_pricer, NULL, FALSE) ;
 
@@ -139,10 +139,7 @@ void ObjPricerUCPUnitDecomposition::ucp_pricing(SCIP* scip)
     SCIP_Real optimal_value(SCIPgetPrimalbound( scip_pricer ) );
     if( optimal_value < reduced_cost_convexity -0.0001 )
     {
-
-        //* create the plan
-        ProductionPlan* new_plan = new ProductionPlan( p_instance_ucp, formulation_pricer );
-        new_plan->computeCost();
+        ProductionPlan* new_plan = formulation_pricer.get_production_plan_from_solution();
 
         //* create the scip variable
         string column_name = "column_" + to_string(m_formulation_master->get_vector_columns().size()); 

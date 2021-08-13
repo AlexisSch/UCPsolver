@@ -38,13 +38,13 @@ using namespace std;
 
 
 FormulationPricer::FormulationPricer(InstanceUCP *instance, SCIP *scip ): 
-    m_scip(scip), m_instance(instance)
+    m_scip_pricer(scip), m_instance_ucp(instance)
 {
 }
 
 
 SCIP* FormulationPricer::get_scip_pointer()
 {
-    return( m_scip );
+    return( m_scip_pricer );
 }
 

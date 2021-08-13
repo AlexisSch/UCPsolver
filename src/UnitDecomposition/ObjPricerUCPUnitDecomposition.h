@@ -64,7 +64,7 @@ class ObjPricerUCPUnitDecomposition : public ObjPricer
     private:
 
     FormulationMasterUnitDecomposition* m_formulation_master;
-    InstanceUCP* p_instance_ucp;
+    InstanceUCP* m_instance_ucp;
     std::vector< double > m_list_RMP_opt;
 
 };

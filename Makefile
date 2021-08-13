@@ -7,7 +7,7 @@
 # paths
 #-----------------------------------------------------------------------------
 
-SCIPDIR         =       /home/alexis/scipoptsuite-7.0.2/scip
+SCIPDIR         =       /home/schlegel/scipoptsuite-7.0.2/scip
 
 
 #-----------------------------------------------------------------------------
@@ -64,7 +64,11 @@ MAINOBJ	=	main.o \
 			\
 			UnitDecomposition/FormulationMasterUnitDecomposition.o \
 			UnitDecomposition/FormulationPricerUnitDecomposition.o \
-			UnitDecomposition/ObjPricerUCPUnitDecomposition.o
+			UnitDecomposition/ObjPricerUCPUnitDecomposition.o \
+			\
+			UnitDecomposition2/FormulationMasterUnitDecomposition2.o \
+			UnitDecomposition2/FormulationPricerUnitDecomposition2.o \
+			UnitDecomposition2/ObjPricerUCPUnitDecomposition2.o
 
 									
 MAINSRC	=	$(addprefix $(SRCDIR)/,$(MAINOBJ:.o=.cpp))
