@@ -44,6 +44,7 @@ InstanceUCP::~InstanceUCP()
 int InstanceUCP::read_data_from_file(char *filename)
 {   
 
+
     ifstream file(filename);
     if (!file)
     {

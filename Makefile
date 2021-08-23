@@ -1,6 +1,6 @@
-#@file    Makefile
-#@brief   Makefile for the SCIP tutorial example by Cornelius Schwarz
-#@author  Marc Pfetsch
+
+
+
 
 
 #-----------------------------------------------------------------------------
@@ -8,6 +8,49 @@
 #-----------------------------------------------------------------------------
 
 SCIPDIR         =       /home/schlegel/scipoptsuite-7.0.2/scip
+
+
+
+
+#-----------------------------------------------------------------------------
+# Main Program
+#-----------------------------------------------------------------------------
+
+MAINNAME	=	ucp.exe
+
+
+# Add all the objects here
+MAINOBJ	=	main.o \
+			\
+			DataClasses/InstanceUCP.o \
+			DataClasses/ProductionPlan.o \
+			\
+			OtherResolution/FormulationCompact.o \
+			OtherResolution/FormulationLinearRelaxation.o \
+			\
+			Decomposition/FormulationMaster.o \
+			Decomposition/FormulationPricer.o \
+			Decomposition/VariableMaster.o \
+			\
+			UnitDecomposition/FormulationMasterUnitDecomposition.o \
+			UnitDecomposition/FormulationPricerUnitDecomposition.o \
+			UnitDecomposition/ObjPricerUCPUnitDecomposition.o \
+			\
+			UnitDecomposition2/FormulationMasterUnitDecomposition2.o \
+			UnitDecomposition2/FormulationPricerUnitDecomposition2.o \
+			UnitDecomposition2/ObjPricerUCPUnitDecomposition2.o \
+			\
+			UnitDecomposition3/FormulationMasterUnitDecomposition3.o \
+			UnitDecomposition3/FormulationPricerUnitDecomposition3.o \
+			UnitDecomposition3/ObjPricerUCPUnitDecomposition3.o
+
+									
+MAINSRC	=	$(addprefix $(SRCDIR)/,$(MAINOBJ:.o=.cpp))
+
+MAIN		=	$(MAINNAME).$(BASE).$(LPS)$(EXEEXTENSION)
+MAINFILE	=	$(BINDIR)/$(MAIN)
+MAINSHORTLINK	=	$(BINDIR)/$(MAINNAME)
+MAINOBJFILES	=	$(addprefix $(OBJDIR)/,$(MAINOBJ))
 
 
 #-----------------------------------------------------------------------------
@@ -43,43 +86,6 @@ include $(SCIPDIR)/make/make.project
 
 
 #-----------------------------------------------------------------------------
-# Main Program
-#-----------------------------------------------------------------------------
-
-MAINNAME	=	ucp.exe
-
-
-# Add all the objects here
-MAINOBJ	=	main.o \
-			\
-			DataClasses/InstanceUCP.o \
-			DataClasses/ProductionPlan.o \
-			\
-			OtherResolution/FormulationCompact.o \
-			OtherResolution/FormulationLinearRelaxation.o \
-			\
-			Decomposition/FormulationMaster.o \
-			Decomposition/FormulationPricer.o \
-			Decomposition/VariableMaster.o \
-			\
-			UnitDecomposition/FormulationMasterUnitDecomposition.o \
-			UnitDecomposition/FormulationPricerUnitDecomposition.o \
-			UnitDecomposition/ObjPricerUCPUnitDecomposition.o \
-			\
-			UnitDecomposition2/FormulationMasterUnitDecomposition2.o \
-			UnitDecomposition2/FormulationPricerUnitDecomposition2.o \
-			UnitDecomposition2/ObjPricerUCPUnitDecomposition2.o
-
-									
-MAINSRC	=	$(addprefix $(SRCDIR)/,$(MAINOBJ:.o=.cpp))
-
-MAIN		=	$(MAINNAME).$(BASE).$(LPS)$(EXEEXTENSION)
-MAINFILE	=	$(BINDIR)/$(MAIN)
-MAINSHORTLINK	=	$(BINDIR)/$(MAINNAME)
-MAINOBJFILES	=	$(addprefix $(OBJDIR)/,$(MAINOBJ))
-
-
-#-----------------------------------------------------------------------------
 # Rules
 #-----------------------------------------------------------------------------
 
@@ -90,23 +96,10 @@ endif
 .PHONY: all
 all:            $(SCIPDIR) $(MAINFILE) $(MAINSHORTLINK)
 
-.PHONY: lint
-lint:		$(MAINSRC)
-		-rm -f lint.out
-		$(SHELL) -ec 'for i in $^; \
-			do \
-			echo $$i; \
-			$(LINT) -I$(SCIPDIR) lint/main-gcc.lnt +os\(lint.out\) -u -zero \
-			$(FLAGS) -UNDEBUG -USCIP_WITH_READLINE -USCIP_ROUNDING_FE $$i; \
-			done'
-
-.PHONY: scip
-scip:
-		@$(MAKE) -C $(SCIPDIR) libs $^
 
 $(MAINSHORTLINK):	$(MAINFILE)
 		@rm -f $@
-		cd $(dir $@) && ln -s $(notdir $(MAINFILE)) $(notdir $@)
+		cd $(dir $@) && ln -s -g $(notdir $(MAINFILE)) $(notdir $@)
 
 $(OBJDIR):
 		@-mkdir -p $(OBJDIR)
@@ -115,23 +108,27 @@ $(BINDIR):
 		@-mkdir -p $(BINDIR)
 
 
-.PHONY: clean
-clean:		$(OBJDIR)
-ifneq ($(OBJDIR),)
-		-rm -f $(OBJDIR)/*.o $(OBJDIR)/*.d
-		-rmdir $(OBJDIR)
-endif
-		-rm -f $(MAINFILE)
-
--include	$(MAINOBJFILES:.o=.d)
 
 $(MAINFILE):	$(BINDIR) $(OBJDIR) $(SCIPLIBFILE) $(LPILIBFILE) $(NLPILIBFILE) $(MAINOBJFILES)
 		@echo "-> linking $@"
-		$(LINKCXX) $(MAINOBJFILES) $(LINKCXXSCIPALL) $(LDFLAGS) $(LINKCXX_o)$@
+		$(LINKCXX) $(MAINOBJFILES) $(LINKCXXSCIPALL) $(LDFLAGS) -g $(LINKCXX_o)$@
 
 
 $(OBJDIR)/%.o:	$(SRCDIR)/%.cpp
 		@echo "-> compiling $@"
-		$(CXX) $(FLAGS) $(OFLAGS) $(BINOFLAGS) $(CXXFLAGS) $(DFLAGS) -c $< $(CXX_o)$@
+		$(CXX) $(FLAGS) $(OFLAGS) $(BINOFLAGS) $(CXXFLAGS) $(DFLAGS) -g -c $< $(CXX_o)$@
+
+
 
 #---- EOF --------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+

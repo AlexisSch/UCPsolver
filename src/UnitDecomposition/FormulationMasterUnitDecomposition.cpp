@@ -44,11 +44,27 @@ using namespace std;
 FormulationMasterUnitDecomposition::FormulationMasterUnitDecomposition( InstanceUCP* instance, SCIP* scip_master):
     FormulationMaster(instance, scip_master)
 {
+    //* create the variables
+    SCIP_RETCODE retcode(SCIP_OKAY);
+    retcode = create_variables();
+    if ( retcode != SCIP_OKAY)
+    {
+        SCIPprintError( retcode );
+    }
 
-    create_constraints();
+    //* create the constraints
+    retcode = create_constraints();
+    if ( retcode != SCIP_OKAY)
+    {
+        SCIPprintError( retcode );
+    }
 
-    create_and_add_first_columns();
-
+    //*  add the first columns (one per block)
+    retcode = create_and_add_first_columns();
+    if ( retcode != SCIP_OKAY)
+    {
+        SCIPprintError( retcode );
+    }
 }
 
 
@@ -59,8 +75,14 @@ FormulationMasterUnitDecomposition::~FormulationMasterUnitDecomposition()
 }
 
 
+SCIP_RETCODE FormulationMasterUnitDecomposition::create_variables()
+{
+    return(SCIP_OKAY);
+}
 
-void FormulationMasterUnitDecomposition::create_constraints()
+
+
+SCIP_RETCODE FormulationMasterUnitDecomposition::create_constraints()
 {
     // creating the constraints
     ostringstream current_cons_name;
@@ -113,11 +135,13 @@ void FormulationMasterUnitDecomposition::create_constraints()
         m_complicating_constraints[i_time_step] = demand_constraint_t;
     }
 
+    return( SCIP_OKAY );
+
 }
 
 
 
-void FormulationMasterUnitDecomposition::create_and_add_first_columns()
+SCIP_RETCODE FormulationMasterUnitDecomposition::create_and_add_first_columns()
 {
     int number_of_units( m_instance_ucp->get_units_number() );
     int number_of_time_steps( m_instance_ucp->get_time_steps_number() );
@@ -151,41 +175,54 @@ void FormulationMasterUnitDecomposition::create_and_add_first_columns()
 
     }
     ProductionPlan* new_plan = new ProductionPlan( m_instance_ucp, up_down_plan, switch_plan, quantity_plan );
-    new_plan->compute_cost();
+    add_column( new_plan, true );
 
-    // create and add the column
-    string column_name = "column_0" ; 
-    SCIP_VAR* p_variable;
-    SCIPcreateVar(  m_scip_master,
-        &p_variable,                            // pointer 
-        column_name.c_str(),                            // name
-        0.,                                     // lowerbound
-        +SCIPinfinity( m_scip_master),            // upperbound
-        new_plan->get_cost(),          // coeff in obj function
-        SCIP_VARTYPE_CONTINUOUS,
-        true, false, NULL, NULL, NULL, NULL, NULL);
-    SCIPaddVar(m_scip_master, p_variable);
-    VariableMaster* first_column = new VariableMaster( p_variable, new_plan);
-    add_column( first_column );
-
+    return( SCIP_OKAY );
 }
 
 
-
-void FormulationMasterUnitDecomposition::add_column( VariableMaster* variable_to_add )
+ 
+SCIP_RETCODE FormulationMasterUnitDecomposition::add_column( ProductionPlan* plan_of_new_column, bool initialization ) 
 {
-    
-    SCIP_VAR* p_variable = variable_to_add->get_variable_pointer();
+    int number_time_step( m_instance_ucp->get_time_steps_number() );
 
-    // add column to convexity constraint
+    //* create the scip variable
+    string column_name = "column_" + to_string(m_vector_columns.size()); 
+    SCIP_VAR* new_scip_variable;
+
+    SCIPcreateVar(  m_scip_master,
+        &new_scip_variable,                            // pointer 
+        column_name.c_str(),                            // name
+        0.,                                     // lowerbound
+        +SCIPinfinity(m_scip_master),            // upperbound
+        plan_of_new_column->get_cost(),          // coeff in obj function
+        SCIP_VARTYPE_CONTINUOUS,
+        false, false, NULL, NULL, NULL, NULL, NULL
+    );
+
+    if(initialization)
+    {
+        SCIPaddVar( m_scip_master, new_scip_variable );
+    }
+    else
+    {
+        SCIPaddPricedVar(m_scip_master, new_scip_variable, 1.);
+    }
+
+    //* create the column
+    VariableMaster* new_column = new VariableMaster( new_scip_variable, plan_of_new_column );
+    m_vector_columns.push_back( new_column );
+
+
+    //* add column to constraints
+    // convexity
     SCIPaddCoefLinear(m_scip_master,
                 m_convexity_constraint,
-                p_variable,  /* variable to add */
+                new_scip_variable,  /* variable to add */
                 1.);         /* coefficient */        
     
-    // add column to demand constraints
-    int number_time_step( m_instance_ucp->get_time_steps_number() );
-    vector<vector<double>> quantity_plan = variable_to_add->get_production_plan()->get_quantity_plan();
+    // demand constraints
+    vector<vector<double>> quantity_plan = plan_of_new_column->get_quantity_plan();
     for( int i_time_step = 0; i_time_step < number_time_step; i_time_step++ )
     {
         double quantity_plan_t(0);
@@ -195,18 +232,72 @@ void FormulationMasterUnitDecomposition::add_column( VariableMaster* variable_to
         }
         SCIPaddCoefLinear(m_scip_master,
             m_complicating_constraints[i_time_step],
-            p_variable,  /* variable to add */
+            new_scip_variable,  /* variable to add */
             quantity_plan_t);                                    /* coefficient */
     }
 
-    m_vector_columns.push_back( variable_to_add );
-
-
-    return;
+    return( SCIP_OKAY );
 }
 
 
 
+ProductionPlan* FormulationMasterUnitDecomposition::get_production_plan_from_solution()
+{
+    int number_columns( m_vector_columns.size());
+    int number_of_units( m_instance_ucp->get_units_number());
+    int number_of_time_steps( m_instance_ucp->get_time_steps_number());
+
+    SCIP_SOL *solution = SCIPgetBestSol( m_scip_master );
+ 
+
+    // We start by creating full zeros plans
+    vector< vector < double > > up_down_plan;
+    vector< vector < double > > switch_plan;
+    vector< vector < double > > quantity_plan;
+    up_down_plan.resize(number_of_units);
+    switch_plan.resize(number_of_units);
+    quantity_plan.resize(number_of_units);
+    for(int i_unit = 0; i_unit < number_of_units; i_unit ++)
+    {
+        up_down_plan[i_unit].resize(number_of_time_steps, 0);
+        switch_plan[i_unit].resize(number_of_time_steps, 0);
+        quantity_plan[i_unit].resize(number_of_time_steps, 0);
+    }
+
+    // for each column, we add its plan value to the base plan, times it's coefficient
+    for(int i_column = 0; i_column < number_columns; i_column ++)
+    {
+        // get the plan with all the corresponding informations, and the coefficient
+        VariableMaster* current_variable = m_vector_columns[i_column];
+        ProductionPlan* current_plan = current_variable->get_production_plan();
+        vector< vector< double > > current_up_down_plan( current_plan->get_up_down_plan() );
+        vector< vector< double > > current_switch_plan( current_plan->get_switch_plan() );
+        vector< vector< double > > current_quantity_plan( current_plan->get_quantity_plan() );
+        SCIP_Real coefficient_column( SCIPgetSolVal( m_scip_master, solution, current_variable->get_variable_pointer()));
+
+        // add the value to the main plan
+        for( int i_unit = 0; i_unit < number_of_units; i_unit ++)
+        {
+            for( int i_time_step = 0; i_time_step < number_of_time_steps; i_time_step++ )
+            {
+                up_down_plan[i_unit][i_time_step] += current_up_down_plan[i_unit][i_time_step]*coefficient_column;
+                switch_plan[i_unit][i_time_step] += current_switch_plan[i_unit][i_time_step]*coefficient_column;
+                quantity_plan[i_unit][i_time_step] += current_quantity_plan[i_unit][i_time_step]*coefficient_column; 
+            }
+        }
+
+    }
+ 
+    // we can now create the plan
+    ProductionPlan* production_plan = new ProductionPlan( m_instance_ucp, up_down_plan, switch_plan, quantity_plan );
+    production_plan->compute_cost();
+
+    return( production_plan );
+}
+
+
+
+//* gets
 
 SCIP_CONS** FormulationMasterUnitDecomposition::get_convexity_constraint()
 {

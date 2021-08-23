@@ -52,7 +52,7 @@ class FormulationPricer
          * Pure virtual function
          *
         */
-        virtual SCIP_RETCODE create_variables( std::vector<SCIP_Real> reduced_costs_demand ) = 0;
+        virtual SCIP_RETCODE create_variables() = 0;
         /** 
          * Pure virtual function
          *
@@ -73,7 +73,9 @@ class FormulationPricer
 
         //* variables : defined in derived classes
 
-        //* constraints : defined in dervied classes
+        //* constraints : defined in derived classes
+
+        //* reduced costs : defined in derived classes
 
 };
 

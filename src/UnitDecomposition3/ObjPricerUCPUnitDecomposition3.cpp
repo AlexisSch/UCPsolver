@@ -1,6 +1,6 @@
 /** 
  * @file
- * Implement the class ObjPricerUCPUnitDecomposition2 
+ * Implement the class ObjPricerUCPUnitDecomposition3 
 */
 
 
@@ -25,9 +25,9 @@
 #include "Decomposition/FormulationPricer.h"
 
 // Unit Decomposition
-#include "UnitDecomposition2/FormulationMasterUnitDecomposition2.h"
-#include "UnitDecomposition2/FormulationPricerUnitDecomposition2.h"
-#include "UnitDecomposition2/ObjPricerUCPUnitDecomposition2.h"
+#include "UnitDecomposition3/FormulationMasterUnitDecomposition3.h"
+#include "UnitDecomposition3/FormulationPricerUnitDecomposition3.h"
+#include "UnitDecomposition3/ObjPricerUCPUnitDecomposition3.h"
 
 
 //** Namespaces
@@ -37,10 +37,10 @@ using namespace scip;
 
 
 /** constructor */
-ObjPricerUCPUnitDecomposition2::ObjPricerUCPUnitDecomposition2(
+ObjPricerUCPUnitDecomposition3::ObjPricerUCPUnitDecomposition3(
     SCIP* scip_master,       /**< SCIP pointer */
     const char* name,               /**< name of pricer */
-    FormulationMasterUnitDecomposition2* formulation_master,
+    FormulationMasterUnitDecomposition3* formulation_master,
     InstanceUCP* instance_ucp
 ):
     ObjPricer(scip_master, name, "Pricer", 0, TRUE)
@@ -51,7 +51,7 @@ ObjPricerUCPUnitDecomposition2::ObjPricerUCPUnitDecomposition2(
 
 
 /** destructor */
-ObjPricerUCPUnitDecomposition2::~ObjPricerUCPUnitDecomposition2()
+ObjPricerUCPUnitDecomposition3::~ObjPricerUCPUnitDecomposition3()
 {}
 
 
@@ -61,18 +61,26 @@ ObjPricerUCPUnitDecomposition2::~ObjPricerUCPUnitDecomposition2()
  *  the variables and constraints in the transformed problem from the references in the original
  *  problem.
  */
-SCIP_DECL_PRICERINIT(ObjPricerUCPUnitDecomposition2::scip_init)
+SCIP_DECL_PRICERINIT(ObjPricerUCPUnitDecomposition3::scip_init)
 {
-    
-    int number_of_time_steps( m_instance_ucp->get_time_steps_number());
-    for(int i_time_step = 0; i_time_step < number_of_time_steps; i_time_step ++ ) 
-    {
-        SCIP_CALL( SCIPgetTransformedCons( scip, 
-                *m_formulation_master->get_complicating_constraints(i_time_step),
-                m_formulation_master->get_complicating_constraints(i_time_step) ) );
-    } 
-
     int number_of_units( m_instance_ucp->get_units_number());
+    int number_of_time_steps( m_instance_ucp->get_time_steps_number());
+
+    // pmin pmax constraints
+    for(int i_unit = 0; i_unit < number_of_units; i_unit ++)
+    {
+        for(int i_time_step = 0; i_time_step < number_of_time_steps; i_time_step ++ ) 
+        {
+            SCIP_CALL( SCIPgetTransformedCons( scip, 
+                    *m_formulation_master->get_constraint_pmax( i_unit, i_time_step),
+                    m_formulation_master->get_constraint_pmax( i_unit, i_time_step) ) );
+            SCIP_CALL( SCIPgetTransformedCons( scip, 
+                    *m_formulation_master->get_constraint_pmin( i_unit, i_time_step),
+                    m_formulation_master->get_constraint_pmin( i_unit, i_time_step) ) );
+        } 
+    }
+
+    // convexicity constraints
     for(int i_unit = 0; i_unit < number_of_units; i_unit ++)
     {
         SCIP_CALL( SCIPgetTransformedCons(scip, 
@@ -95,7 +103,7 @@ SCIP_DECL_PRICERINIT(ObjPricerUCPUnitDecomposition2::scip_init)
  *  - SCIP_SUCCESS    : at least one improving variable was found, or it is ensured that no such variable exists
  *  - SCIP_DIDNOTRUN  : the pricing process was aborted by the pricer, there is no guarantee that the current LP solution is optimal
  */
-SCIP_DECL_PRICERREDCOST(ObjPricerUCPUnitDecomposition2::scip_redcost)
+SCIP_DECL_PRICERREDCOST(ObjPricerUCPUnitDecomposition3::scip_redcost)
 {
     SCIPdebugMsg(scip, "call scip_redcost ...\n");
 
@@ -110,7 +118,7 @@ SCIP_DECL_PRICERREDCOST(ObjPricerUCPUnitDecomposition2::scip_redcost)
 
 
 
-void ObjPricerUCPUnitDecomposition2::ucp_pricing(SCIP* scip)
+void ObjPricerUCPUnitDecomposition3::ucp_pricing(SCIP* scip)
 {
 
     m_list_RMP_opt.push_back( SCIPgetPrimalbound( scip ) );
@@ -118,15 +126,25 @@ void ObjPricerUCPUnitDecomposition2::ucp_pricing(SCIP* scip)
     int number_of_units( m_instance_ucp->get_units_number());
 
     //* get the reduced costs
-    // demand constraints
-    vector< SCIP_Real > reduced_cost_demand;
-    reduced_cost_demand.resize( number_of_time_steps );
-    SCIP_CONS* current_constraint(0);
+    // pmin and pmax constraints
+    vector< vector < SCIP_Real > > reduced_costs_pmax;
+    vector< vector < SCIP_Real > > reduced_costs_pmin;
+    reduced_costs_pmax.resize( number_of_units );
+    reduced_costs_pmin.resize( number_of_units );
 
-    for(int i_time_step = 0; i_time_step < number_of_time_steps; i_time_step ++ ) 
+    SCIP_CONS* current_constraint(0);
+    for(int i_unit = 0; i_unit < number_of_units ; i_unit ++ )
     {
-        current_constraint =  *m_formulation_master->get_complicating_constraints(i_time_step) ;
-        reduced_cost_demand[i_time_step] = SCIPgetDualsolLinear( scip, current_constraint );
+        reduced_costs_pmax[i_unit].resize( number_of_time_steps );
+        reduced_costs_pmin[i_unit].resize( number_of_time_steps );
+
+        for(int i_time_step = 0; i_time_step < number_of_time_steps; i_time_step ++ ) 
+        {
+            current_constraint =  *m_formulation_master->get_constraint_pmax(i_unit, i_time_step) ;
+            reduced_costs_pmax[i_unit][i_time_step] = SCIPgetDualsolLinear( scip, current_constraint );
+            current_constraint =  *m_formulation_master->get_constraint_pmin(i_unit, i_time_step) ;
+            reduced_costs_pmin[i_unit][i_time_step] = SCIPgetDualsolLinear( scip, current_constraint );
+        }
     }
 
     // convexity constraints
@@ -136,7 +154,6 @@ void ObjPricerUCPUnitDecomposition2::ucp_pricing(SCIP* scip)
     {
         current_constraint = *(m_formulation_master->get_convexity_constraint( i_unit ));
         reduced_costs_convexity[i_unit] = SCIPgetDualsolLinear( scip, current_constraint ) ;
-
     }
 
     //*  create and solve the pricing problems with the reduced values
@@ -147,8 +164,8 @@ void ObjPricerUCPUnitDecomposition2::ucp_pricing(SCIP* scip)
         SCIPincludeDefaultPlugins( scip_pricer );
         SCIPcreateProb(scip_pricer, "UCP_PRICER_PROBLEM", 0, 0, 0, 0, 0, 0, 0);
         SCIPsetIntParam(scip_pricer, "display/verblevel", 0);
-        FormulationPricerUnitDecomposition2 formulation_pricer( m_instance_ucp, 
-            scip_pricer, reduced_cost_demand, i_unit);
+        FormulationPricerUnitDecomposition3 formulation_pricer( m_instance_ucp, 
+            scip_pricer, reduced_costs_pmax[i_unit], reduced_costs_pmin[i_unit], i_unit);
         SCIPsolve( scip_pricer );
         // SCIPprintBestSol(scip_pricer, NULL, FALSE) ;
 
@@ -156,7 +173,7 @@ void ObjPricerUCPUnitDecomposition2::ucp_pricing(SCIP* scip)
         SCIP_Real optimal_value(SCIPgetPrimalbound( scip_pricer ) );
         if( optimal_value < reduced_costs_convexity[i_unit] -0.0001 )
         {
-            //* create the plan and send it to the master problem to create a new column
+            //* create the plan
             ProductionPlan* new_plan = formulation_pricer.get_production_plan_from_solution();
             m_formulation_master->add_column( new_plan, false, i_unit );
 

@@ -140,25 +140,7 @@ void ObjPricerUCPUnitDecomposition::ucp_pricing(SCIP* scip)
     if( optimal_value < reduced_cost_convexity -0.0001 )
     {
         ProductionPlan* new_plan = formulation_pricer.get_production_plan_from_solution();
-
-        //* create the scip variable
-        string column_name = "column_" + to_string(m_formulation_master->get_vector_columns().size()); 
-        SCIP_VAR* p_variable;
-
-        SCIPcreateVar(  scip,
-            &p_variable,                            // pointer 
-            column_name.c_str(),                            // name
-            0.,                                     // lowerbound
-            +SCIPinfinity(scip),            // upperbound
-            new_plan->get_cost(),          // coeff in obj function
-            SCIP_VARTYPE_CONTINUOUS,
-            false, false, NULL, NULL, NULL, NULL, NULL);
-    
-        SCIPaddPricedVar(scip, p_variable, 1.);
-
-        //* create the master variable
-        VariableMaster* new_column = new VariableMaster( p_variable, new_plan );
-        m_formulation_master->add_column( new_column );
+        m_formulation_master->add_column( new_plan, false );     
     }
     
 }

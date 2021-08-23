@@ -25,3 +25,37 @@ In the src folder, you can find all the code in .cpp or .h files. It is organise
 
 
 You could create classes for every block of a decomposition ?
+
+
+# How do i create a new decomposition ?
+
+Don't forget to add the corresponding folder for the objects !
+Change the 3 classes :
+- master : change the vectors of contraints and of variables ; change add_column, change the constraints definition
+- pricer : same, change all the variables and constriant
+
+
+
+errors in make : 
+expected identifier before ‘)’ token : manque une virgule
+ expected unqualified-id before ‘int’ : virgule à la place du point virg
+
+
+
+
+a few rules :
+- in pricer, only put things usefull for the pricer. Don't send the full reduced costs matrix, for example.
+
+
+
+trucs classiques :
+
+int number_of_units( m_instance_ucp->get_units_number() );
+int number_of_time_steps( m_instance_ucp->get_time_steps_number() );
+for( int i_unit = 0; i_unit < number_of_units; i_unit ++)
+{
+    for(int i_time_step = 0; i_time_step < number_of_time_steps; i_time_step ++)
+    {
+        // write here
+    }
+}

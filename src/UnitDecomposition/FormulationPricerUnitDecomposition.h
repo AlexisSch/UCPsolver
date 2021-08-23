@@ -50,7 +50,7 @@ class FormulationPricerUnitDecomposition : public FormulationPricer
         ProductionPlan* get_production_plan_from_solution();
 
         //* virtual functions
-        SCIP_RETCODE create_variables( std::vector<SCIP_Real> reduced_costs_demand );
+        SCIP_RETCODE create_variables();
         SCIP_RETCODE create_constraints();
 
 
@@ -68,6 +68,8 @@ class FormulationPricerUnitDecomposition : public FormulationPricer
         std::vector< std::vector< SCIP_CONS* >> m_constraint_min_down_time;
         std::vector< std::vector< SCIP_CONS* >> m_constraint_startup;
         
+        //* reduced costs
+        std::vector<SCIP_Real> m_reduced_costs_demand;
 
 };
 

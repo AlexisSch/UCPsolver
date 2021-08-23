@@ -56,20 +56,22 @@ class FormulationMaster
         /**
          * @brief goes over the columns selected to get the current best plan 
          * @return a pointer to the production plan
+         * @remark working for by itself, but may be modified in inherited classes
         */
-        ProductionPlan* get_production_plan_from_solution();
-
+        virtual ProductionPlan* get_production_plan_from_solution() = 0;
+     
         /**
          * 
          * @brief adds a column to the restricted master problem . Pure virtual function 
-         * 
+         * for now we keep it aside, it is put in childrent classes
         */
-        virtual void add_column( VariableMaster* variable_to_add ) = 0;
+        // virtual SCIP_RETCODE add_column( ProductionPlan* plan_of_new_column ) = 0;
 
+        virtual SCIP_RETCODE create_variables() = 0;
 
-        virtual void create_constraints() = 0;
+        virtual SCIP_RETCODE create_constraints() = 0;
 
-        virtual void create_and_add_first_columns() = 0;
+        virtual SCIP_RETCODE create_and_add_first_columns() = 0;
 
 
 
@@ -77,8 +79,6 @@ class FormulationMaster
 
         SCIP* get_scip_pointer();
         InstanceUCP* get_instance();
-
-        std::vector< VariableMaster* > get_vector_columns();
 
 
 
@@ -88,8 +88,6 @@ class FormulationMaster
         InstanceUCP *m_instance_ucp;
         SCIP *m_scip_master;
 
-        //* variables
-        std::vector< VariableMaster* > m_vector_columns;
 
         //* constraints : defined in derived class
 

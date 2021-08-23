@@ -1,9 +1,9 @@
 /** 
- * @class FormulationPricerUnitDecomposition2
+ * @class FormulationPricerUnitDecomposition3
 */
 
-#ifndef FormulationPricerUnitDecomposition2_H
-#define FormulationPricerUnitDecomposition2_H
+#ifndef FormulationPricerUnitDecomposition3_H
+#define FormulationPricerUnitDecomposition3_H
 
 //** Includes
 
@@ -35,24 +35,28 @@
 
 /* namespace */
 
-class FormulationPricerUnitDecomposition2 : public FormulationPricer
+class FormulationPricerUnitDecomposition3 : public FormulationPricer
 {
 
     public : 
 
         //* constructor
-        FormulationPricerUnitDecomposition2(InstanceUCP *instance, SCIP *scip, 
-        std::vector<SCIP_Real> reduced_costs_demand,
-        int unit_number );
+        FormulationPricerUnitDecomposition3(InstanceUCP *instance, 
+            SCIP *scip, 
+            std::vector< SCIP_Real > reduced_costs_pmax,
+            std::vector< SCIP_Real > reduced_costs_pmin,
+            int unit_number
+        );
 
         //* destructor
-        ~FormulationPricerUnitDecomposition2()
+        ~FormulationPricerUnitDecomposition3()
         {};
 
         ProductionPlan* get_production_plan_from_solution();
         
         //* virtual functions
         SCIP_RETCODE create_variables();
+
         SCIP_RETCODE create_constraints();
 
 
@@ -67,16 +71,15 @@ class FormulationPricerUnitDecomposition2 : public FormulationPricer
         //* variables
         std::vector< SCIP_VAR* > m_variable_u;
         std::vector< SCIP_VAR* > m_variable_x;
-        std::vector< SCIP_VAR* > m_variable_p;
 
         //* contraintes
-        std::vector< SCIP_CONS* > m_constraint_production;
         std::vector< SCIP_CONS* > m_constraint_min_up_time;
         std::vector< SCIP_CONS* > m_constraint_min_down_time;
         std::vector< SCIP_CONS* > m_constraint_startup;
         
         //* reduced costs
-        std::vector<SCIP_Real> m_reduced_costs_demand;
+        std::vector< SCIP_Real > m_reduced_costs_pmax;
+        std::vector< SCIP_Real > m_reduced_costs_pmin;
 
         //* block information
         int m_unit_number;

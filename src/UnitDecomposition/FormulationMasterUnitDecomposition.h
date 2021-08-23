@@ -54,12 +54,15 @@ class FormulationMasterUnitDecomposition : public FormulationMaster
         /**
          * @brief adds a column to the restricted master problem 
         */
-        void add_column( VariableMaster* variable_to_add );
+        SCIP_RETCODE add_column( ProductionPlan* plan_of_new_column, bool initialization );
+        
+        SCIP_RETCODE create_variables();
+        
+        SCIP_RETCODE create_constraints();
 
+        SCIP_RETCODE create_and_add_first_columns();
 
-        void create_constraints();
-
-        void create_and_add_first_columns();
+        ProductionPlan* get_production_plan_from_solution();
 
 
         //* gets
@@ -70,7 +73,10 @@ class FormulationMasterUnitDecomposition : public FormulationMaster
 
     private:
 
-        // constraints
+        //* variables
+        std::vector< VariableMaster* > m_vector_columns;
+
+        //* constraints
         std::vector< SCIP_CONS* > m_complicating_constraints;
         SCIP_CONS* m_convexity_constraint;
 

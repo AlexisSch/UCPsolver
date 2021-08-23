@@ -39,12 +39,12 @@ using namespace std;
 FormulationPricerUnitDecomposition::FormulationPricerUnitDecomposition(InstanceUCP *instance, 
     SCIP *scip, 
     vector<SCIP_Real> reduced_costs_demand):
-    FormulationPricer( instance, scip )
+    FormulationPricer( instance, scip ), m_reduced_costs_demand( reduced_costs_demand )
 {
 
     //* create the variables
     SCIP_RETCODE retcode(SCIP_OKAY);
-    retcode = create_variables(reduced_costs_demand);
+    retcode = create_variables();
     if ( retcode != SCIP_OKAY)
     {
         SCIPprintError( retcode );
@@ -61,7 +61,7 @@ FormulationPricerUnitDecomposition::FormulationPricerUnitDecomposition(InstanceU
 
 
 /* create all the variable and add them to the object */
-SCIP_RETCODE FormulationPricerUnitDecomposition::create_variables(vector<SCIP_Real> reduced_costs_demand)
+SCIP_RETCODE FormulationPricerUnitDecomposition::create_variables()
 {
     ostringstream current_var_name;
     int unit_number = m_instance_ucp->get_units_number();
@@ -146,7 +146,7 @@ SCIP_RETCODE FormulationPricerUnitDecomposition::create_variables(vector<SCIP_Re
                 current_var_name.str().c_str(), // name
                 0,                     // lowerbound
                 prod_max[i_unit],                              // upperbound
-                cost_prop[i_unit] - reduced_costs_demand[i_time_step],              // coeff in obj function
+                cost_prop[i_unit] - m_reduced_costs_demand[i_time_step],              // coeff in obj function
                 SCIP_VARTYPE_CONTINUOUS));      // type
 
             // Adding the variable to the problem and the var matrix
