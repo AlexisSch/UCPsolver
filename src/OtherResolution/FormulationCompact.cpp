@@ -351,14 +351,12 @@ SCIP_RETCODE FormulationCompact::create_constraints()
 
         vector<SCIP_CONS*> cons_min_uptime_i;
 
-
-
-        for(int i_time_step = min_uptime[i_unit]; i_time_step < time_step_number; i_time_step ++)
+        for(int i_time_step = min_uptime[i_unit] - 1; i_time_step < time_step_number; i_time_step ++)
         {
             SCIP_CONS* cons_min_uptime_i_t;
             current_cons_name.str("");
             current_cons_name << "cons_min_uptime_" << i_unit << "_" << i_time_step;
-
+ 
             // create the constraint
             SCIP_CALL( SCIPcreateConsBasicLinear( m_scip, 
                 &cons_min_uptime_i_t,                /** constraint pointer */ 

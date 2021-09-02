@@ -297,7 +297,7 @@ SCIP_RETCODE FormulationPricerUnitDecomposition2::create_constraints()
     //* Minimum uptime constraint
     vector<int> min_uptime = m_instance_ucp->get_min_uptime();
 
-    for(int i_time_step = min_uptime[m_unit_number]; i_time_step < number_of_time_steps; i_time_step ++)
+    for(int i_time_step = min_uptime[m_unit_number] - 1; i_time_step < number_of_time_steps; i_time_step ++)
     {
         SCIP_CONS* cons_min_uptime_i_t;
         current_cons_name.str("");

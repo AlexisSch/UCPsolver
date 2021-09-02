@@ -1,4 +1,5 @@
 
+#@brief   Makefile for UCP solver
 
 
 
@@ -7,8 +8,44 @@
 # paths
 #-----------------------------------------------------------------------------
 
-SCIPDIR         =       /home/schlegel/scipoptsuite-7.0.2/scip
+SCIPDIR      	:=      /home/schlegel/scipoptsuite-7.0.2/scip
+CPLEXDIR      	:=  	/opt/ibm/ILOG/CPLEX_Studio201/cplex
+CONCERTDIR    	:= 		/opt/ibm/ILOG/CPLEX_Studio201/concert
 
+#-----------------------------------------------------------------------------
+# include default project Makefile from SCIP
+#-----------------------------------------------------------------------------
+include $(SCIPDIR)/make/make.project
+
+# ---------------------------------------------------------------------
+# Compiler options for Cplex
+# ---------------------------------------------------------------------
+
+CCOPT = -O0  -m64 -O -fPIC -fno-strict-aliasing -fexceptions -DNDEBUG -DIL_STD
+COPT  = -O0 -m64 -fPIC -fno-strict-aliasing
+
+
+
+# ---------------------------------------------------------------------
+# CPLEX Link options and libraries
+# ---------------------------------------------------------------------
+
+SYSTEM     = x86-64_linux
+LIBFORMAT  = static_pic
+
+CPLEXBINDIR   = $(CPLEXDIR)/bin/$(BINDIST)
+CPLEXLIBDIR   = $(CPLEXDIR)/lib/$(SYSTEM)/$(LIBFORMAT)
+CONCERTLIBDIR = $(CONCERTDIR)/lib/$(SYSTEM)/$(LIBFORMAT)
+
+CCLNDIRS  = -L$(CPLEXLIBDIR) -L$(CONCERTLIBDIR)
+
+CONCERTINCDIR = $(CONCERTDIR)/include
+CPLEXINCDIR   = $(CPLEXDIR)/include
+
+CPLEXLNFLAGS = -lconcert -lilocplex -lcplex -lm -lpthread 
+
+CCCPLEXFLAGS = $(CCOPT) -I$(CPLEXINCDIR) -I$(CONCERTINCDIR)
+CCPLEXFLAGS  = $(COPT)  -I$(CPLEXINCDIR)			
 
 
 
@@ -42,11 +79,17 @@ MAINOBJ	=	main.o \
 			\
 			UnitDecomposition3/FormulationMasterUnitDecomposition3.o \
 			UnitDecomposition3/FormulationPricerUnitDecomposition3.o \
-			UnitDecomposition3/ObjPricerUCPUnitDecomposition3.o
+			UnitDecomposition3/ObjPricerUCPUnitDecomposition3.o \
+			\
+			TimeDecomposition/FormulationMasterTimeDecomposition.o \
+			TimeDecomposition/FormulationPricerTimeDecomposition.o \
+			TimeDecomposition/ObjPricerUCPTimeDecomposition.o 
+
 
 									
 MAINSRC	=	$(addprefix $(SRCDIR)/,$(MAINOBJ:.o=.cpp))
-
+MAINDEP		=	$(SRCDIR)/depend.cppmain.$(OPT)
+	
 MAIN		=	$(MAINNAME).$(BASE).$(LPS)$(EXEEXTENSION)
 MAINFILE	=	$(BINDIR)/$(MAIN)
 MAINSHORTLINK	=	$(BINDIR)/$(MAINNAME)
@@ -99,7 +142,7 @@ all:            $(SCIPDIR) $(MAINFILE) $(MAINSHORTLINK)
 
 $(MAINSHORTLINK):	$(MAINFILE)
 		@rm -f $@
-		cd $(dir $@) && ln -s -g $(notdir $(MAINFILE)) $(notdir $@)
+		cd $(dir $@) && ln -s $(notdir $(MAINFILE)) $(notdir $@)
 
 $(OBJDIR):
 		@-mkdir -p $(OBJDIR)
@@ -111,12 +154,14 @@ $(BINDIR):
 
 $(MAINFILE):	$(BINDIR) $(OBJDIR) $(SCIPLIBFILE) $(LPILIBFILE) $(NLPILIBFILE) $(MAINOBJFILES)
 		@echo "-> linking $@"
-		$(LINKCXX) $(MAINOBJFILES) $(LINKCXXSCIPALL) $(LDFLAGS) -g $(LINKCXX_o)$@
+		$(LINKCXX) $(CCLNDIRS) $(MAINOBJFILES) $(LINKCXXSCIPALL) \
+		$(CPLEXFLAGS) $(CPLEXLNFLAGS)    \
+		$(LDFLAGS) $(LINKCXX_o)$@
 
 
 $(OBJDIR)/%.o:	$(SRCDIR)/%.cpp
 		@echo "-> compiling $@"
-		$(CXX) $(FLAGS) $(OFLAGS) $(BINOFLAGS) $(CXXFLAGS) $(DFLAGS) -g -c $< $(CXX_o)$@
+		$(CXX) $(FLAGS) $(OFLAGS) $(BINOFLAGS) $(CXXFLAGS) $(DFLAGS) $(CCCPLEXFLAGS) -g -c $< $(CXX_o)$@
 
 
 

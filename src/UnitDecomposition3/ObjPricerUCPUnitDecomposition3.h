@@ -38,34 +38,65 @@ class ObjPricerUCPUnitDecomposition3 : public ObjPricer
 
     public:
 
-    /** Constructs the pricer object with the data needed */
-    ObjPricerUCPUnitDecomposition3(
-        SCIP* scip_master,                  /**< SCIP pointer */
-        const char* name,                   /**< name of pricer */
-        FormulationMasterUnitDecomposition3* formulation_master,
-        InstanceUCP* instance_ucp
-    );
+        /** Constructs the pricer object with the data needed */
+        ObjPricerUCPUnitDecomposition3(
+            SCIP* scip_master,                  /**< SCIP pointer */
+            const char* name,                   /**< name of pricer */
+            FormulationMasterUnitDecomposition3* formulation_master,
+            InstanceUCP* instance_ucp
+        );
 
-    /** Destructs the pricer object. */
-    virtual ~ObjPricerUCPUnitDecomposition3();
+        /** Destructs the pricer object. */
+        virtual ~ObjPricerUCPUnitDecomposition3();
 
-    /** reduced cost pricing method of variable pricer for feasible LPs */
-    virtual SCIP_DECL_PRICERREDCOST(scip_redcost);
+        /** reduced cost pricing method of variable pricer for feasible LPs */
+        virtual SCIP_DECL_PRICERREDCOST(scip_redcost);
 
-    /** initialization method of variable pricer (called after problem was transformed) */
-    virtual SCIP_DECL_PRICERINIT(scip_init);
+        /** initialization method of variable pricer (called after problem was transformed) */
+        virtual SCIP_DECL_PRICERINIT(scip_init);
 
-    SCIP_RETCODE SCIPpricerUCPActivate();
 
-    /** perform pricing */
-    void ucp_pricing(SCIP* scip);
+        /** perform pricing */
+        void ucp_pricing(SCIP* scip);
+
+        
+        // /**
+        //  * compute the lagrangian bounds
+        // */
+        // double compute_lagrangian_bound();
+
+        /**
+         * get the total solving time of the master problems
+         */
+        double get_solving_time_master();
+
+        /**
+         * get the total solving time of the pricing problems
+         */
+        double get_solving_time_pricer();
+
+        /**
+         * print all the times 
+         */
+        void print_times();
 
 
     private:
 
-    FormulationMasterUnitDecomposition3* m_formulation_master;
-    InstanceUCP* m_instance_ucp;
-    std::vector< double > m_list_RMP_opt;
+        FormulationMasterUnitDecomposition3* m_formulation_master;
+        InstanceUCP* m_instance_ucp;
+
+        std::vector< double > m_primal_bounds;
+        std::vector< double > m_lagrangian_bounds;
+
+        std::vector< double > m_solving_times_master;
+        double m_total_solving_time_master;
+        double m_total_solving_time_pricer;
+        double m_time_pricer_setup;
+        double m_time_reduced_costs;
+        double m_time_adding_columns;
+
+        clock_t m_time;
 };
 
 

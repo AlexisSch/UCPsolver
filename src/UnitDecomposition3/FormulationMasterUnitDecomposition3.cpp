@@ -125,7 +125,7 @@ SCIP_RETCODE FormulationMasterUnitDecomposition3::add_column( ProductionPlan* pl
         SCIP_CALL( SCIPaddCoefLinear(m_scip_master,
             m_constraints_pmax[block_number][i_time_step],
             new_scip_variable,                                          /* variable to add */
-            - production_max * up_down_plan_unit[i_time_step] ));       /* coefficient */
+            + production_max * up_down_plan_unit[i_time_step] ));       /* coefficient */
         // pmin
         SCIP_CALL( SCIPaddCoefLinear(m_scip_master,
             m_constraints_pmin[block_number][i_time_step],
@@ -281,8 +281,8 @@ SCIP_RETCODE FormulationMasterUnitDecomposition3::create_constraints()
                 0,                                  /** number of variable added */
                 nullptr,                            /** array of variable */
                 nullptr,                            /** array of coefficient */
-                -SCIPinfinity(m_scip_master),                /** LHS */
-                0,                                  /** RHS */
+                0,                /** LHS */
+                SCIPinfinity(m_scip_master),                                  /** RHS */
                 true,  /* initial */
 			    false, /* separate */
 			    true,  /* enforce */
@@ -299,7 +299,7 @@ SCIP_RETCODE FormulationMasterUnitDecomposition3::create_constraints()
             SCIPaddCoefLinear( m_scip_master,
                 cons_pmax_i_t,
                 m_variable_p[i_unit][i_time_step],                           /** variable to add */
-                1.                                    /** coefficient */
+                - 1.                                    /** coefficient */
             );
             // add the constraint
             SCIP_CALL( SCIPaddCons(m_scip_master, cons_pmax_i_t));
@@ -497,4 +497,7 @@ SCIP_CONS** FormulationMasterUnitDecomposition3::get_constraint_pmin(int number_
 }
 
 
-
+int FormulationMasterUnitDecomposition3::get_columns_number()
+{
+    return(m_vector_columns.size());
+}

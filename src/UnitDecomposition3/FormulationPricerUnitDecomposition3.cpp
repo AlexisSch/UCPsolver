@@ -67,7 +67,7 @@ SCIP_RETCODE FormulationPricerUnitDecomposition3::create_variables()
 {
     ostringstream current_var_name;
     int number_of_time_steps = m_instance_ucp->get_time_steps_number();
-
+  
 
     // Variables x
     double production_max( m_instance_ucp->get_production_max()[m_unit_number]);
@@ -83,8 +83,8 @@ SCIP_RETCODE FormulationPricerUnitDecomposition3::create_variables()
         // lets calculate the coefficient beforehand
         double coefficient( 0. );
         coefficient += fixed_cost_unit_i;
-        coefficient += + production_max * m_reduced_costs_pmax[ i_time_step ];
-        coefficient += + production_min * m_reduced_costs_pmin[ i_time_step ];
+        coefficient -=  production_max * m_reduced_costs_pmax[ i_time_step ];
+        coefficient +=  production_min * m_reduced_costs_pmin[ i_time_step ] ;
 
         // create the variable
         SCIPcreateVarBasic(  m_scip_pricer,
@@ -215,7 +215,7 @@ SCIP_RETCODE FormulationPricerUnitDecomposition3::create_constraints()
     //* Minimum uptime constraint
     vector<int> min_uptime = m_instance_ucp->get_min_uptime();
 
-    for(int i_time_step = min_uptime[m_unit_number]; i_time_step < number_of_time_steps; i_time_step ++)
+    for(int i_time_step = min_uptime[m_unit_number] - 1; i_time_step < number_of_time_steps; i_time_step ++)
     {
         SCIP_CONS* cons_min_uptime_i_t;
         current_cons_name.str("");

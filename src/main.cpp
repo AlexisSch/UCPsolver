@@ -1,8 +1,7 @@
 /**
  * @file main.cpp
  * 
- * * We pilote the solving of a UCP problem from here.
- * todo : understand what namespace is, errors catching ? 
+ * * We pilote the solving of a UCP problem from here.=
  * change the class productionplan, it has two use at the same time, circular dependance
  * create the destructors and the gets, use smard pointers, add commentaries, etc.
 */
@@ -59,6 +58,10 @@
 #include "UnitDecomposition3/FormulationMasterUnitDecomposition3.h"
 #include "UnitDecomposition3/ObjPricerUCPUnitDecomposition3.h"
 
+// Time decomposition
+#include "TimeDecomposition/FormulationMasterTimeDecomposition.h"
+#include "TimeDecomposition/ObjPricerUCPTimeDecomposition.h"
+
 //* Namespaces
 using namespace std;
 
@@ -72,9 +75,6 @@ SCIP_RETCODE read_arguments( int argc,
     int &time_limit, 
     int &display_verbosity )
 {
-    must_write_data_out = false;
-    time_limit = 100;
-    display_verbosity = 0;
 
     if(argc < 2)
     {
@@ -111,160 +111,310 @@ SCIP_RETCODE read_arguments( int argc,
 
 
 
+
 /* main function */
 int main(
     int argc,
     char** argv
     )
 {			
+    
+    //* solving preparation : data importation
 
-    cerr << "Welcome to this UCP solver  ! " << endl << endl;
-
-    //* Definition of usefull parameters
     SCIP_RETCODE retcode;
     char* entry_file_name;
     char* exit_file_name;
-    bool must_write_data_out;
-    int time_limit;
-    int display_verbosity;
-
+    bool must_write_data_out = false;
+    int time_limit(100);
+    int display_verbosity(1); // 0 for nothing, 1 for basic stuff, 2 for EVERYTHING
+ 
     retcode = read_arguments(argc, argv, entry_file_name, exit_file_name, must_write_data_out, time_limit, display_verbosity );
     if ( retcode != SCIP_OKAY )
     {
-        cerr << "hum ..." << endl;
-        entry_file_name = "/home/schlegel/Documents/UCPsolver/data/instance1.txt" ;
+        cerr << "Invalid filename entry; solving default instance. " << endl;
+        entry_file_name = "/home/schlegel/Documents/UCPsolver/data/instance3.txt" ;
+    }
+    InstanceUCP *instance_ucp = new InstanceUCP( entry_file_name );
+
+
+    clock_t begin_time = clock();
+    if(display_verbosity > 0)
+    {
+        cout << "Welcome to this UCP solver !" << endl;
+    }
+
+    ofstream file;
+    if( must_write_data_out )
+    {
+        file.open( exit_file_name , ios::out | ios::app);
+        if( !file )
+        {
+            cerr << "Your filename is not working !" << endl;
+            must_write_data_out = false;    
+        } 
+        else
+        {
+            file << instance_ucp->get_units_number() << ", " << instance_ucp->get_time_steps_number() << ", "   ;
+        }   
+    }
+
+
+
+
+
+    //* SOLVING
+
+
+    //* Compact 
+    bool solve_compact = true;
+    if( solve_compact )
+    {
+        begin_time = clock();
+
+        // creation of the problem and solving
+        SCIP* scip(0);
+        SCIPcreate( &scip );
+        SCIPincludeDefaultPlugins( scip );
+        SCIPcreateProb(scip, "UCP", 0, 0, 0, 0, 0, 0, 0);
+        SCIPsetIntParam(scip, "display/verblevel", 0);
+        FormulationCompact *formulation_compact = new FormulationCompact( instance_ucp, scip );
+        SCIPsolve( scip );
+
+        ProductionPlan* production_plan_compact = formulation_compact->get_production_plan_from_solution();
+
+        double solution_cost( production_plan_compact->get_cost());
+        double solving_time( float( clock () - begin_time ) /  CLOCKS_PER_SEC );
+        
+        // display
+        if( display_verbosity > 0)
+        {
+            cout << "\n Compact Resolution : \n";
+            cout << "Solution ost : " << solution_cost << "\n";
+            cout << "Resolution time : " << solving_time << "\n";
+        }
+        if( display_verbosity > 1)
+        {
+            SCIPprintBestSol(scip, NULL, FALSE) ;
+        }
+
+        // write in the document
+        if( must_write_data_out )
+        {
+            file << solution_cost << ", " << solving_time << ", " ;
+        }
+
+    }
+
+
+    //* Linear relaxation
+    bool solve_linear = true;
+    if( solve_linear )
+    {
+        begin_time = clock();
+
+        SCIP* scip(0);
+        SCIPcreate( &scip );
+        SCIPincludeDefaultPlugins( scip );
+        SCIPcreateProb(scip, "UCP", 0, 0, 0, 0, 0, 0, 0);
+        SCIPsetIntParam(scip, "display/verblevel", 0);
+        
+        FormulationLinearRelaxation *formulation = new FormulationLinearRelaxation( instance_ucp, scip );
+        SCIPsolve( scip );
+        
+        ProductionPlan* production_plan = formulation->get_production_plan_from_solution();
+        
+        double solution_cost( production_plan->get_cost());
+        double solving_time( float( clock () - begin_time ) /  CLOCKS_PER_SEC );
+
+        // display
+        if( display_verbosity > 0)
+        {
+            cout << "\nLinear Relaxation : \n";
+            cout << "Solution ost : " << solution_cost << "\n";
+            cout << "Resolution time : " << solving_time << "\n";
+        }
+        if( display_verbosity > 1)
+        {
+            SCIPprintBestSol(scip, NULL, FALSE) ;
+        }
+
+        // write in the document
+        if( must_write_data_out )
+        {
+            file << solution_cost << ", " << solving_time << ", " ;
+        }
+
+    }
+ 
+    
+
+    // //* Unit Decomposition 2
+    bool solve_unit_decomposition2 = false;
+    if( solve_unit_decomposition2 )
+    {
+        begin_time = clock();
+
+        // Create the master problem
+        SCIP* scip_master(0);
+        SCIPcreate( &scip_master );
+        SCIPincludeDefaultPlugins( scip_master );
+        SCIPcreateProb(scip_master, "UCP", 0, 0, 0, 0, 0, 0, 0);
+        SCIPsetIntParam(scip_master, "display/verblevel", 0);
+        FormulationMasterUnitDecomposition2* formulation_master = new FormulationMasterUnitDecomposition2( instance_ucp, scip_master );
+        // Add the pricer
+        static const char* PRICER_NAME = "pricer_ucp2";
+        ObjPricerUCPUnitDecomposition2 *pricer_ucp = new ObjPricerUCPUnitDecomposition2( scip_master, PRICER_NAME, 
+            formulation_master, 
+            instance_ucp
+        );
+        SCIPincludeObjPricer(scip_master, pricer_ucp, true);
+        SCIPactivatePricer(scip_master, SCIPfindPricer(scip_master, PRICER_NAME));
+
+        // Solve
+        SCIPsolve( scip_master );
+        ProductionPlan* production_plan = formulation_master->get_production_plan_from_solution();
+    
+        // Post solving
+
+        double cost( production_plan->get_cost());
+        double solving_time( float( clock () - begin_time ) /  CLOCKS_PER_SEC );
+        double number_of_columns( formulation_master->get_columns_number());
+        if( display_verbosity > 0)
+        {
+            cout << "\nColumn Generation \nwith production constraints in subproblems \n";
+            cout << "Solution ost : " << cost << "\n";
+            cout << "Resolution time : " << solving_time << "\n";
+            cout << "Number of columns : " << number_of_columns << endl;
+        }
+        if( display_verbosity > 1)
+        {
+            SCIPprintBestSol(scip_master, NULL, FALSE) ;
+        }
+        if( must_write_data_out )
+        {
+            file << cost << ", " << solving_time << ", " << number_of_columns << ", "  ;
+        }
+
+    }
+
+
+
+ 
+    //* Unit Decomposition 3
+    bool solve_unit_decomposition3 = true;
+    if( solve_unit_decomposition3 )
+    {
+
+        begin_time = clock();
+
+        // Create the master problem
+        SCIP* scip_master(0);
+        SCIPcreate( &scip_master );
+        SCIPincludeDefaultPlugins( scip_master );
+        SCIPcreateProb(scip_master, "UCP", 0, 0, 0, 0, 0, 0, 0);
+        SCIPsetIntParam(scip_master, "display/verblevel", 0);
+        FormulationMasterUnitDecomposition3* formulation_master = new FormulationMasterUnitDecomposition3( instance_ucp, scip_master );
+        // Add the pricer
+        static const char* PRICER_NAME3 = "pricer";
+        ObjPricerUCPUnitDecomposition3 *pricer = new ObjPricerUCPUnitDecomposition3( scip_master, PRICER_NAME3, 
+            formulation_master, 
+            instance_ucp
+        );
+        SCIPincludeObjPricer(scip_master, pricer, true);
+        SCIPactivatePricer(scip_master, SCIPfindPricer(scip_master, PRICER_NAME3));
+        // Solve 
+        SCIPsolve( scip_master );
+        ProductionPlan* production_plan = formulation_master->get_production_plan_from_solution();
+    
+        // Print
+        double solution_cost( production_plan->get_cost());
+        double solving_time( float( clock () - begin_time ) /  CLOCKS_PER_SEC );
+        double columns_number( formulation_master->get_columns_number());
+
+        if( display_verbosity > 0)
+        {
+            cout << "\nColumn Generation \nwith production constraints in master \n";
+            cout << "Solution cost : " << solution_cost << "\n";
+            cout << "Number of columns : " << columns_number << endl;
+            cout << "Resolution time : " << solving_time << "\n";
+            pricer->print_times();
+        }
+        if( display_verbosity > 1)
+        {
+            SCIPprintBestSol(scip_master, NULL, FALSE) ;
+        }
+        if( must_write_data_out )
+        {
+            file << solution_cost << ", " << solving_time << ", " << columns_number << ", "  ;
+        }
+
+    }
+
+
+
+    //* Time Decomposition
+    bool solve_time_decomposition = true;
+    if (solve_time_decomposition)
+    {
+        begin_time = clock();
+        // Create the master problem
+        SCIP* scip_master(0);
+        SCIPcreate( &scip_master );
+        SCIPincludeDefaultPlugins( scip_master );
+        SCIPcreateProb(scip_master, "UCP", 0, 0, 0, 0, 0, 0, 0);
+        SCIPsetIntParam(scip_master, "display/verblevel", 0);
+        FormulationMasterTimeDecomposition* formulation_master = new FormulationMasterTimeDecomposition( instance_ucp, scip_master );
+        // Add the pricer
+        static const char* PRICER_NAME_TIME = "pricer";
+        ObjPricerUCPTimeDecomposition *pricer = new ObjPricerUCPTimeDecomposition( scip_master, PRICER_NAME_TIME, 
+            formulation_master, 
+            instance_ucp
+        );
+        SCIPincludeObjPricer(scip_master, pricer, true);
+        SCIPactivatePricer(scip_master, SCIPfindPricer(scip_master, PRICER_NAME_TIME));
+        // Solve 
+        SCIPsolve( scip_master );
+        ProductionPlan* production_plan = formulation_master->get_production_plan_from_solution();
+    
+        double solution_cost( production_plan->get_cost());
+        double solving_time( float( clock () - begin_time ) /  CLOCKS_PER_SEC );
+        double columns_number( formulation_master->get_columns_number());
+
+        // display
+        if( display_verbosity > 0)
+        {
+            cout << "\n Time decomposition \n";
+            cout << "Solution ost : " << solution_cost << "\n";
+            cout << "Resolution time : " << solving_time << "\n";
+            cout << "Number of columns : " << columns_number << endl;
+        }
+        if( display_verbosity > 1)
+        {
+            SCIPprintBestSol(scip_master, NULL, FALSE) ;
+        }
+
+        // write in document
+        if( must_write_data_out )
+        {
+            file << solution_cost << ", " << solving_time << ", " << columns_number << "," ;
+        }
+    }
+
+
+    if( must_write_data_out )
+    {
+        file << endl;
+    }
+
+
+    if( display_verbosity > 0)
+    {
+        cerr << "\n\nProgram ends here. See you later ! " << endl;
     }
     
 
-    //* Get informations about the instance_ucp
-    InstanceUCP *instance_ucp = new InstanceUCP( entry_file_name );
-
-    clock_t begin_time = clock();
-    
-    //* Compact resolution
-
-    SCIP* scip_compact(0);
-    SCIPcreate( &scip_compact );
-    SCIPincludeDefaultPlugins( scip_compact );
-    SCIPcreateProb(scip_compact, "UCP", 0, 0, 0, 0, 0, 0, 0);
-    SCIPsetIntParam(scip_compact, "display/verblevel", display_verbosity);
-    
-    FormulationCompact *formulation_compact = new FormulationCompact( instance_ucp, scip_compact );
-    SCIPsolve( scip_compact );
-
-    ProductionPlan* production_plan_compact = formulation_compact->get_production_plan_from_solution();
-    cout << "Cost of integer optimum : " << production_plan_compact->get_cost() << endl;
-    cout << "Resolution time : " << float( clock () - begin_time ) /  CLOCKS_PER_SEC << endl;
-
-    //* Linear relaxation
-    begin_time = clock();
-    SCIP* scip_lr(0);
-    SCIPcreate( &scip_lr );
-    SCIPincludeDefaultPlugins( scip_lr );
-    SCIPcreateProb(scip_lr, "UCP", 0, 0, 0, 0, 0, 0, 0);
-    SCIPsetIntParam(scip_lr, "display/verblevel", display_verbosity);
-    
-    FormulationLinearRelaxation *formulation_lr = new FormulationLinearRelaxation( instance_ucp, scip_lr );
-    SCIPsolve( scip_lr );
-    
-    ProductionPlan* production_plan_linear_relaxation = formulation_lr->get_production_plan_from_solution();
-    cout << "Cost of linear relaxation : " << production_plan_linear_relaxation->get_cost() << endl;
-    cout << "Resolution time : " << float( clock () - begin_time ) /  CLOCKS_PER_SEC << endl;   
-
-    
-    //* Column generation 1
-
-    cerr << "\nFirst column generation" << endl;
-    
-    // Create the master problem
-    SCIP* scip_master(0);
-    SCIPcreate( &scip_master );
-    SCIPincludeDefaultPlugins( scip_master );
-    SCIPcreateProb(scip_master, "UCP", 0, 0, 0, 0, 0, 0, 0);
-    SCIPsetIntParam(scip_master, "display/verblevel", display_verbosity);
-    FormulationMasterUnitDecomposition* formulation_master = new FormulationMasterUnitDecomposition( instance_ucp, scip_master );
-
-    // Add the pricer
-    static const char* PRICER_NAME = "Pricer_UCP";
-    ObjPricerUCPUnitDecomposition *pricer_ucp = new ObjPricerUCPUnitDecomposition( scip_master, PRICER_NAME, 
-        formulation_master, 
-        instance_ucp
-    );
-
-    SCIPincludeObjPricer(scip_master, pricer_ucp, true);
-    SCIPactivatePricer(scip_master, SCIPfindPricer(scip_master, PRICER_NAME));
-
-    // Solve
-    SCIPsolve( scip_master );
-    ProductionPlan* production_plan_column_generation = formulation_master->get_production_plan_from_solution();
-    // Print
-    cout << "Cost of unit decomposition 1 : " << production_plan_column_generation->get_cost() << endl;
-    cout << "Resolution time : " << float( clock () - begin_time ) /  CLOCKS_PER_SEC << endl;   
 
 
-
-    //* Column generation 2
-
-    cerr << "\nSecond Column generation" << endl;
-    begin_time = clock();
-    // Create the master problem
-    SCIP* scip_master2(0);
-    SCIPcreate( &scip_master2 );
-    SCIPincludeDefaultPlugins( scip_master2 );
-    SCIPcreateProb(scip_master2, "UCP", 0, 0, 0, 0, 0, 0, 0);
-    SCIPsetIntParam(scip_master2, "display/verblevel", display_verbosity);
-    FormulationMasterUnitDecomposition2* formulation_master2 = new FormulationMasterUnitDecomposition2( instance_ucp, scip_master2 );
-    // Add the pricer
-    static const char* PRICER_NAME2 = "Pricer_UCP2";
-    ObjPricerUCPUnitDecomposition2 *pricer_ucp2 = new ObjPricerUCPUnitDecomposition2( scip_master2, PRICER_NAME2, 
-        formulation_master2, 
-        instance_ucp
-    );
-    SCIPincludeObjPricer(scip_master2, pricer_ucp2, true);
-    SCIPactivatePricer(scip_master2, SCIPfindPricer(scip_master2, PRICER_NAME2));
-
-    // Solve
-    SCIPsolve( scip_master2 );
-    ProductionPlan* production_plan_column_generation2 = formulation_master2->get_production_plan_from_solution();
-   
-    // Print
-    SCIPprintBestSol(scip_master2, NULL, FALSE) ;
-    cout << "Cost of unit decomposition 2 : " << production_plan_column_generation2->get_cost() << endl;
-    cout << "Resolution time : " << float( clock () - begin_time ) /  CLOCKS_PER_SEC << endl;
-
-
-    //* Column generation 3
-
-    cerr << "\nThird Column generation" << endl;
-    begin_time = clock();
-    // Create the master problem
-    SCIP* scip_master3(0);
-    SCIPcreate( &scip_master3 );
-    SCIPincludeDefaultPlugins( scip_master3 );
-    SCIPcreateProb(scip_master3, "UCP", 0, 0, 0, 0, 0, 0, 0);
-    SCIPsetIntParam(scip_master3, "display/verblevel", display_verbosity);
-    FormulationMasterUnitDecomposition3* formulation_master3 = new FormulationMasterUnitDecomposition3( instance_ucp, scip_master3 );
-    // Add the pricer
-    static const char* PRICER_NAME3 = "Pricer_UCP3";
-    ObjPricerUCPUnitDecomposition3 *pricer_ucp3 = new ObjPricerUCPUnitDecomposition3( scip_master3, PRICER_NAME3, 
-        formulation_master3, 
-        instance_ucp
-    );
-    SCIPincludeObjPricer(scip_master3, pricer_ucp3, true);
-    SCIPactivatePricer(scip_master3, SCIPfindPricer(scip_master3, PRICER_NAME3));
-    // Solve
-    SCIPsolve( scip_master3 );
-    ProductionPlan* production_plan_column_generation3 = formulation_master3->get_production_plan_from_solution();
-   
-    // Print
-    SCIPprintBestSol(scip_master3, NULL, FALSE) ;
-    cout << "Cost of unit decomposition 3 : " << production_plan_column_generation3->get_cost() << endl;
-    cout << "Resolution time : " << float( clock () - begin_time ) /  CLOCKS_PER_SEC << endl;
-
-    
-
-
-    cerr << "Program ends here. See you later ! " << endl;
     return 0;
 }
 

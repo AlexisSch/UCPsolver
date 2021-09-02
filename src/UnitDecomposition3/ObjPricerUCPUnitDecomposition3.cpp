@@ -8,7 +8,7 @@
 
 //* Standart
 #include <vector>
-
+#include <ctime>
 
 //* SCIP
 #include "objscip/objpricer.h"
@@ -47,6 +47,7 @@ ObjPricerUCPUnitDecomposition3::ObjPricerUCPUnitDecomposition3(
 {
     m_formulation_master = formulation_master;
     m_instance_ucp = instance_ucp;
+    m_time = clock();
 }
 
 
@@ -115,17 +116,26 @@ SCIP_DECL_PRICERREDCOST(ObjPricerUCPUnitDecomposition3::scip_redcost)
 
     return SCIP_OKAY;
 } 
-
+ 
 
 
 void ObjPricerUCPUnitDecomposition3::ucp_pricing(SCIP* scip)
 {
 
-    m_list_RMP_opt.push_back( SCIPgetPrimalbound( scip ) );
+    // stats about the master problem solving
+    SCIP_Real optimal_value_master(SCIPgetPrimalbound( scip ) );
+    m_primal_bounds.push_back( optimal_value_master );
+    double solving_time_master = float( clock () - m_time ) /  CLOCKS_PER_SEC ;
+    m_solving_times_master.push_back( solving_time_master );
+    m_total_solving_time_master += solving_time_master;
+
+
     int number_of_time_steps( m_instance_ucp->get_time_steps_number());
     int number_of_units( m_instance_ucp->get_units_number());
 
+
     //* get the reduced costs
+    m_time = clock();
     // pmin and pmax constraints
     vector< vector < SCIP_Real > > reduced_costs_pmax;
     vector< vector < SCIP_Real > > reduced_costs_pmin;
@@ -156,38 +166,82 @@ void ObjPricerUCPUnitDecomposition3::ucp_pricing(SCIP* scip)
         reduced_costs_convexity[i_unit] = SCIPgetDualsolLinear( scip, current_constraint ) ;
     }
 
+
+    m_time_reduced_costs += float( clock () - m_time ) /  CLOCKS_PER_SEC ;
+
+
+
     //*  create and solve the pricing problems with the reduced values
     for(int i_unit = 0; i_unit < number_of_units; i_unit ++)
     {   
+
+        m_time = clock();
+
         SCIP* scip_pricer(0);
         SCIPcreate( &scip_pricer );
         SCIPincludeDefaultPlugins( scip_pricer );
         SCIPcreateProb(scip_pricer, "UCP_PRICER_PROBLEM", 0, 0, 0, 0, 0, 0, 0);
         SCIPsetIntParam(scip_pricer, "display/verblevel", 0);
         FormulationPricerUnitDecomposition3 formulation_pricer( m_instance_ucp, 
-            scip_pricer, reduced_costs_pmax[i_unit], reduced_costs_pmin[i_unit], i_unit);
+            scip_pricer, reduced_costs_pmax[i_unit], reduced_costs_pmin[i_unit], i_unit
+        );
+        m_time_pricer_setup+= float( clock () - m_time ) /  CLOCKS_PER_SEC ;
+
+
         SCIPsolve( scip_pricer );
-        // SCIPprintBestSol(scip_pricer, NULL, FALSE) ;
+
+        SCIP_Real optimal_value_pricer(SCIPgetPrimalbound( scip_pricer ) );
+        SCIP_Real solving_time_pricer(SCIPgetSolvingTime( scip_pricer ) );
+        m_total_solving_time_pricer += solving_time_pricer;
 
         //* if a plan is found, create and add the column, else, do nothing, which will make the column generation stop
-        SCIP_Real optimal_value(SCIPgetPrimalbound( scip_pricer ) );
-        if( optimal_value < reduced_costs_convexity[i_unit] -0.0001 )
+        if( optimal_value_pricer < reduced_costs_convexity[i_unit] -0.0001 )
         {
+            m_time = clock();
             //* create the plan
             ProductionPlan* new_plan = formulation_pricer.get_production_plan_from_solution();
             m_formulation_master->add_column( new_plan, false, i_unit );
-
+            m_time_adding_columns += float( clock () - m_time ) /  CLOCKS_PER_SEC ;
         }
-    
     }
+
+    m_time = clock();
     
 }
 
 
 
 
+// double ObjPricerUCPUnitDecomposition3::compute_lagrangian_bound()
+// {
+//     double lagrangian_bound = 0.;
+    
+//     for(int i_time_step = 0; i_time_step < number_of_time_steps; i_time_step ++)
+//     {
+//         lagrangian_bound += dual_prices
+//     }
+// }
+ 
 
 
 
+double ObjPricerUCPUnitDecomposition3::get_solving_time_master()
+{
+    return( m_total_solving_time_master );
+}
 
+double ObjPricerUCPUnitDecomposition3::get_solving_time_pricer()
+{
+    return( m_total_solving_time_pricer );
+}
+
+
+void ObjPricerUCPUnitDecomposition3::print_times()
+{
+    cout << "Resolution time master : " << m_total_solving_time_master << endl;
+    cout << "Resolution time pricer : " << m_total_solving_time_pricer << endl;
+    cout << "Time setting up the pricer problems : " << m_time_pricer_setup << endl;
+    cout << "Adding columns : " << m_time_adding_columns << endl;
+    cout << "Reduced costs : " << m_time_reduced_costs << endl;
+}
 

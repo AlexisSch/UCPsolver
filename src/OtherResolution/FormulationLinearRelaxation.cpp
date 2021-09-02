@@ -353,7 +353,7 @@ SCIP_RETCODE FormulationLinearRelaxation::create_constraints()
 
 
 
-        for(int i_time_step = min_uptime[i_unit]; i_time_step < time_step_number; i_time_step ++)
+        for(int i_time_step = min_uptime[i_unit] - 1; i_time_step < time_step_number; i_time_step ++)
         {
             SCIP_CONS* cons_min_uptime_i_t;
             current_cons_name.str("");

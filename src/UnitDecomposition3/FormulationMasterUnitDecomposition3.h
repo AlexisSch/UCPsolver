@@ -73,6 +73,7 @@ class FormulationMasterUnitDecomposition3 : public FormulationMaster
         SCIP_CONS** get_constraint_pmax(int number_unit, int number_time_step);
         SCIP_CONS** get_constraint_pmin(int number_unit, int number_time_step);
 
+        int get_columns_number();
 
     private:
          

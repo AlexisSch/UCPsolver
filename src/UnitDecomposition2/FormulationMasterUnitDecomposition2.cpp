@@ -331,4 +331,8 @@ SCIP_CONS** FormulationMasterUnitDecomposition2::get_complicating_constraints(in
     return( &m_complicating_constraints[number_time_step] );
 }
 
+int FormulationMasterUnitDecomposition2::get_columns_number()
+{
+    return( m_vector_columns.size());
+}
 

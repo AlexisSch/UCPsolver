@@ -72,7 +72,7 @@ class FormulationMasterUnitDecomposition2 : public FormulationMaster
 
         SCIP_CONS** get_convexity_constraint(int unit_number);
         SCIP_CONS** get_complicating_constraints(int number_time_step);
-
+        int get_columns_number();
 
     private:
 

@@ -22,40 +22,33 @@ In the src folder, you can find all the code in .cpp or .h files. It is organise
 - In the /Decomposition folder, you can find a bunch of stuff needed by all decompositions. First, the VariableMaster, which have so far the same structure for every decomposition. Then FormulationMaster and FormulationPricer, which are abstract class. You will need to derive these classes in your decomposition, adding the correct constraints to get the column generation working
 - For a decomposition, there should be a folder /MyDecomposition, where there should be 3 classes : FormulationMasterMyDecomposition and FormulationPricerMyDecomposition, derived from the classes from /decomposition, and ObjPricerUCPMyDecomposition, which is derived from ObjPricer, a class from SCIP. This class allows us to tell SCIP how to get the column generation rolling.
 
+To use CPLEX ?
+make LPS=cpx ZIMPL=false
 
 
 You could create classes for every block of a decomposition ?
 
 
 # How do i create a new decomposition ?
+In the src/TemplateDecomposition, you will find templates (not sure that it's the right name ?) for every classes that needs to be created.
+You will need to create three inherited classes :
+- FormulationMaster : for the master problem, from here you will manipulate constraints, columns and variables that are used by the Master Problem.
+- FormulationPricer : same for the Pricer Problem
+- ObjPricer : this class is needed by Scip, you will pilote the pricing problem from here, and see if columns need to be added. There are also a few functions (forgot the name) that needs to be called to setup the column generation.
 
-Don't forget to add the corresponding folder for the objects !
-Change the 3 classes :
-- master : change the vectors of contraints and of variables ; change add_column, change the constraints definition
-- pricer : same, change all the variables and constriant
+The templates should tell you where to put the right things. Avoid to copy pasta as much as possible, as it is likely to create many errors. If you fill where it is needed step by step, it should work pretty well.
+Some decomposition might recquire some specific stuff (for example if it is an overlapping decomposition, or if you want to add some functionnalities...), which the template do not cover.
 
-
-
-errors in make : 
-expected identifier before ‘)’ token : manque une virgule
- expected unqualified-id before ‘int’ : virgule à la place du point virg
-
-
-
-
-a few rules :
-- in pricer, only put things usefull for the pricer. Don't send the full reduced costs matrix, for example.
+# A few commentaries
+As you might observe while navigating this code, a few things have changed in the way I code since the beggining of the project - hopefully for the better. The code might not be totally clean, but the last decompositions done should be pretty easy to use.
 
 
 
-trucs classiques :
 
-int number_of_units( m_instance_ucp->get_units_number() );
-int number_of_time_steps( m_instance_ucp->get_time_steps_number() );
-for( int i_unit = 0; i_unit < number_of_units; i_unit ++)
-{
-    for(int i_time_step = 0; i_time_step < number_of_time_steps; i_time_step ++)
-    {
-        // write here
-    }
-}
+
+
+
+
+
+
+
